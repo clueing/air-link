@@ -1,0 +1,1689 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AirLink — P2P 文件传输</title>
+  <style>
+    :root {
+      --bg: #fcfcfd;
+      --bg-subtle: #f8fafc;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-strong: #ffffff;
+      --panel-muted: #f8fafc;
+      --text: #111827;
+      --text-soft: #475569;
+      --text-faint: #64748b;
+      --line: #e2e8f0;
+      --line-strong: #cbd5e1;
+      --accent: #3e63dd;
+      --accent-hover: #3358d4;
+      --accent-soft: #eef2ff;
+      --accent-glow: rgba(62, 99, 221, 0.14);
+      --danger: #d64045;
+      --danger-soft: #fff1f2;
+      --danger-border: #fecdd3;
+      --success: #18794e;
+      --success-soft: #eefbf3;
+      --success-border: #bbf7d0;
+      --warning-soft: #fff7ed;
+      --warning-text: #b45309;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 10px 38px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 24px 64px rgba(15, 23, 42, 0.12);
+      --radius-xs: 8px;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --font: Inter, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+      --bg-gradient: radial-gradient(circle at top, rgba(62, 99, 221, 0.06), transparent 30%),
+                     linear-gradient(180deg, #ffffff 0%, var(--bg-subtle) 100%);
+      --panel-border: rgba(226, 232, 240, 0.88);
+      --progress-bg: #e7edf6;
+      --progress-gradient: linear-gradient(90deg, #2f56d5 0%, #3e63dd 100%);
+      --brand-gradient: linear-gradient(135deg, #1d4ed8 0%, #3e63dd 100%);
+      --toast-bg: rgba(15, 23, 42, 0.94);
+      --accent-border: rgba(62, 99, 221, 0.1);
+      --success-shadow: rgba(24, 121, 78, 0.3);
+    }
+
+    /* 暗色模式 */
+    [data-theme="dark"] {
+      --bg: #0f1218;
+      --bg-subtle: #161b22;
+      --panel: rgba(22, 27, 34, 0.92);
+      --panel-strong: #1c2128;
+      --panel-muted: #21262d;
+      --text: #e6edf3;
+      --text-soft: #8b949e;
+      --text-faint: #6e7681;
+      --line: #30363d;
+      --line-strong: #484f58;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --accent-soft: rgba(56, 139, 253, 0.1);
+      --accent-glow: rgba(56, 139, 253, 0.14);
+      --danger: #f85149;
+      --danger-soft: rgba(248, 81, 73, 0.1);
+      --danger-border: rgba(248, 81, 73, 0.4);
+      --success: #3fb950;
+      --success-soft: rgba(63, 185, 80, 0.1);
+      --success-border: rgba(63, 185, 80, 0.4);
+      --warning-soft: rgba(210, 153, 34, 0.1);
+      --warning-text: #d29922;
+      --shadow-sm: 0 0 transparent;
+      --shadow-md: 0 0 transparent;
+      --shadow-lg: 0 0 transparent;
+      --bg-gradient: radial-gradient(circle at top, rgba(56, 139, 253, 0.08), transparent 30%),
+                     linear-gradient(180deg, #161b22 0%, #0f1218 100%);
+      --panel-border: rgba(48, 54, 61, 0.88);
+      --progress-bg: #21262d;
+      --progress-gradient: linear-gradient(90deg, #1f6feb 0%, #58a6ff 100%);
+      --brand-gradient: linear-gradient(135deg, #1f6feb 0%, #58a6ff 100%);
+      --toast-bg: rgba(22, 27, 34, 0.94);
+      --accent-border: rgba(56, 139, 253, 0.1);
+      --success-shadow: rgba(63, 185, 80, 0.3);
+    }
+
+    /* 主题切换按钮 — 三态: auto / light / dark */
+    .theme-toggle {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .theme-toggle:hover {
+      background: var(--panel-muted);
+      border-color: var(--line-strong);
+    }
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-faint);
+      transition: color 0.2s, opacity 0.15s;
+    }
+    .theme-toggle:hover svg {
+      color: var(--text);
+    }
+    .theme-auto-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--panel-strong);
+      display: none;
+    }
+    .theme-toggle[data-mode="auto"] .theme-auto-badge {
+      display: block;
+    }
+
+    /* ── Device Popover ── */
+    .device-count {
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+    }
+    .device-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 240px;
+      background: var(--panel-strong);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      padding: 12px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-4px);
+      transition: all 0.18s ease;
+      z-index: 50;
+    }
+    .device-popover.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .device-popover-title {
+      font-size: 11px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+    .device-popover-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .device-popover-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: var(--radius-xs);
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+    .device-popover-item:hover {
+      background: var(--bg-subtle);
+    }
+    .device-popover-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+    }
+    .device-popover-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .device-popover-you {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    /* ── LAN Scan ── */
+    .lan-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .lan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .lan-title {
+      font-size: 12px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .lan-scan-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-weight: 500;
+      transition: all 0.16s;
+    }
+    .lan-scan-btn:hover {
+      background: rgba(62, 99, 221, 0.12);
+      border-color: rgba(62, 99, 221, 0.28);
+    }
+    .lan-scan-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .lan-scan-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+    .lan-scan-btn.scanning svg {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .lan-devices {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .lan-empty {
+      text-align: center;
+      padding: 16px 0;
+      font-size: 13px;
+      color: var(--text-faint);
+    }
+    .lan-empty svg {
+      display: block;
+      margin: 0 auto 8px;
+      width: 24px;
+      height: 24px;
+      color: var(--line-strong);
+    }
+    .lan-device-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      transition: border-color 0.16s;
+    }
+    .lan-device-item:hover {
+      border-color: var(--line-strong);
+    }
+    .lan-device-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+    }
+    .lan-device-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .lan-device-name {
+      font-weight: 500;
+      color: var(--text);
+    }
+    .lan-device-ip {
+      font-size: 11px;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+    }
+    .lan-device-connect {
+      padding: 4px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.16s;
+      white-space: nowrap;
+    }
+    .lan-device-connect:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg-gradient);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* ── App Shell ── */
+    .app {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Header ── */
+    .header {
+      height: 56px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: center;
+      padding: 0 24px;
+      gap: 14px;
+      flex-shrink: 0;
+      z-index: 10;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 16px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .header-logo svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--accent); }
+    .header-divider {
+      width: 1px; height: 24px;
+      background: var(--line);
+    }
+    .header-status {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; color: var(--text-faint);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--line-strong);
+      transition: background 0.2s;
+    }
+    .status-dot.online { background: var(--success); box-shadow: 0 0 6px var(--success-shadow); }
+    .header-room {
+      display: flex; align-items: center; gap: 10px;
+      margin-left: auto;
+    }
+    .pin-badge {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.12em;
+      border: 1px solid var(--accent-border);
+    }
+    .device-count {
+      font-size: 12px;
+      color: var(--text-faint);
+      display: flex; align-items: center; gap: 5px;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+    .btn-leave {
+      background: var(--panel-strong);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 0.16s, border-color 0.16s;
+    }
+    .btn-leave:hover { background: var(--danger-soft); border-color: var(--danger); }
+
+    /* ── Lobby ── */
+    .lobby {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .lobby-card {
+      width: 100%; max-width: 440px;
+      background: var(--panel-strong);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-xl);
+      padding: 44px 36px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(12px);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 8px;
+      justify-content: center;
+    }
+    .brand-mark {
+      width: 44px; height: 44px;
+      display: inline-grid; place-items: center;
+      border-radius: var(--radius-md);
+      background: var(--brand-gradient);
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-text h1 {
+      font-size: 24px; line-height: 1.2;
+      font-weight: 600; letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .brand-text p {
+      font-size: 13px; color: var(--text-faint);
+      margin-top: 2px;
+    }
+    /* ── Name Section ── */
+    .name-section {
+      display: flex; align-items: center; gap: 10px;
+      margin: 16px 0 24px;
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+    .name-label {
+      font-size: 12px; color: var(--text-faint);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .name-display {
+      flex: 1;
+      font-size: 14px; font-weight: 500;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .name-edit-input {
+      flex: 1;
+      padding: 4px 8px;
+      background: var(--panel-strong);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font);
+      font-weight: 500;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .btn-name-edit {
+      width: 28px; height: 28px;
+      background: none; border: 1px solid var(--line);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.16s;
+      flex-shrink: 0;
+    }
+    .btn-name-edit:hover { background: var(--panel-muted); border-color: var(--line-strong); }
+    .btn-name-edit svg { width: 13px; height: 13px; color: var(--text-faint); }
+    .name-hint {
+      font-size: 11px; color: var(--text-faint);
+      margin-top: -16px;
+      margin-bottom: 16px;
+      padding-left: 2px;
+    }
+
+    .lobby-sub {
+      font-size: 14px; color: var(--text-soft);
+      margin: 16px 0 28px; line-height: 1.6;
+    }
+    .lobby-actions {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .btn-primary {
+      width: 100%; padding: 12px 20px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600; font-size: 14px;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer; font-family: var(--font);
+      transition: background 0.16s, box-shadow 0.16s;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      letter-spacing: 0.01em;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .lobby-divider {
+      display: flex; align-items: center; gap: 14px;
+      margin: 2px 0;
+      font-size: 12px; color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+    .lobby-divider::before, .lobby-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--line);
+    }
+    .pin-input-group {
+      display: flex; gap: 10px;
+    }
+    .pin-input {
+      flex: 1;
+      padding: 11px 14px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.16s, box-shadow 0.16s;
+    }
+    .pin-input::placeholder { color: var(--text-faint); font-weight: 400; letter-spacing: 0.08em; font-size: 14px; }
+    .pin-input:hover { border-color: var(--line-strong); }
+    .pin-input:focus {
+      border-color: rgba(62, 99, 221, 0.62);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+    .btn-join {
+      padding: 11px 22px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600; font-size: 14px;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer; font-family: var(--font);
+      transition: background 0.16s;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+    .btn-join:hover { background: var(--accent-hover); }
+    .btn-join:disabled { opacity: 0.42; cursor: default; pointer-events: none; }
+
+    /* ── Waiting State ── */
+    .waiting {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .waiting-card {
+      width: 100%; max-width: 440px;
+      background: var(--panel-strong);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-xl);
+      padding: 44px 36px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+    .waiting-pin {
+      font-family: var(--font-mono);
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--accent);
+      margin: 20px 0 8px;
+    }
+    .waiting-hint {
+      font-size: 13px; color: var(--text-faint);
+      line-height: 1.6;
+    }
+    .waiting-devices {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .waiting-devices-title {
+      font-size: 12px; color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .device-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .device-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .device-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+    }
+    .device-name { flex: 1; text-align: left; color: var(--text-soft); }
+    .device-you {
+      font-size: 11px; color: var(--accent);
+      background: var(--accent-soft);
+      padding: 2px 10px; border-radius: 999px;
+      font-weight: 500;
+      border: 1px solid var(--accent-border);
+    }
+
+    /* ── Room (Chat) ── */
+    .room {
+      flex: 1; display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .room.active { display: flex; }
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 4px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+    /* Message Bubbles */
+    .msg {
+      display: flex; flex-direction: column;
+      max-width: 72%;
+      animation: msgIn 0.2s ease-out;
+    }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .msg.self { align-self: flex-end; align-items: flex-end; }
+    .msg.other { align-self: flex-start; align-items: flex-start; }
+    .msg-sender {
+      font-size: 11px; color: var(--text-faint);
+      margin-bottom: 4px; padding: 0 4px;
+      font-weight: 500;
+    }
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius-lg);
+      font-size: 14px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+    .msg.self .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 1px 3px var(--accent-glow);
+    }
+    .msg.other .msg-bubble {
+      background: var(--panel-strong);
+      color: var(--text);
+      border: 1px solid var(--panel-border);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .msg-time {
+      font-size: 11px; color: var(--text-faint);
+      margin-top: 4px; padding: 0 4px;
+    }
+
+    /* System Messages */
+    .msg-system {
+      align-self: center;
+      font-size: 12px; color: var(--text-faint);
+      padding: 5px 14px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      margin: 8px 0;
+      font-weight: 500;
+    }
+
+    /* File Transfer Cards */
+    .file-card {
+      max-width: 340px;
+      background: var(--panel-strong);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      animation: msgIn 0.2s ease-out;
+      box-shadow: var(--shadow-sm);
+    }
+    .msg.self .file-card { border-color: var(--accent-border); }
+    /* File previews */
+    .file-preview { margin: -16px -16px 12px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; background: var(--bg-subtle); }
+    .file-preview img { display: block; width: 100%; max-height: 240px; object-fit: cover; cursor: pointer; transition: opacity 0.15s; }
+    .file-preview img:hover { opacity: 0.88; }
+    .file-preview video { display: block; width: 100%; max-height: 240px; background: #000; }
+    .file-preview-audio { display: flex; align-items: center; gap: 10px; padding: 12px; }
+    .file-preview-audio-icon { width: 36px; height: 36px; flex-shrink: 0; background: var(--accent-soft); border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent-border); }
+    .file-preview-audio-icon svg { width: 16px; height: 16px; color: var(--accent); }
+    .file-preview-audio audio { flex: 1; height: 32px; min-width: 0; border-radius: 8px; }
+    .file-preview-text { padding: 12px; max-height: 140px; overflow: auto; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-soft); white-space: pre-wrap; word-break: break-all; border-top: 1px solid var(--line); }
+    .file-preview-text::-webkit-scrollbar { width: 4px; }
+    .file-preview-text::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
+    .file-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 12px;
+    }
+    .file-icon {
+      width: 40px; height: 40px;
+      background: var(--accent-soft);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--accent-border);
+    }
+    .file-icon svg { width: 18px; height: 18px; color: var(--accent); }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .file-size { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
+    .file-progress {
+      height: 6px;
+      background: var(--progress-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .file-progress-bar {
+      height: 100%;
+      background: var(--progress-gradient);
+      border-radius: inherit;
+      transition: width 0.25s ease;
+    }
+    .file-progress-bar.done { background: var(--success); }
+    .file-status {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--text-faint);
+    }
+    .file-status .status-text { color: var(--accent); font-weight: 600; }
+    .file-status .status-text.done { color: var(--success); }
+    .btn-download {
+      display: inline-flex; align-items: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 0.16s, border-color 0.16s;
+    }
+    .btn-download:hover { background: rgba(62, 99, 221, 0.12); border-color: rgba(62, 99, 221, 0.28); }
+
+    /* ── Input Bar ── */
+    .input-bar {
+      padding: 14px 20px;
+      background: var(--panel);
+      border-top: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: flex-end; gap: 10px;
+    }
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+    }
+    .btn-attach {
+      width: 42px; height: 42px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.16s, border-color 0.16s;
+      flex-shrink: 0;
+    }
+    .btn-attach:hover { background: var(--bg-subtle); border-color: var(--line-strong); }
+    .btn-attach svg { width: 18px; height: 18px; color: var(--text-faint); }
+    .msg-input {
+      flex: 1;
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.16s, box-shadow 0.16s, height 0.18s ease;
+      resize: none;
+      height: 42px;
+      max-height: 180px;
+      line-height: 1.45;
+      overflow-y: hidden;
+    }
+    .msg-input.expanded {
+      overflow-y: auto;
+    }
+    .msg-input::-webkit-scrollbar { width: 4px; }
+    .msg-input::-webkit-scrollbar-track { background: transparent; }
+    .msg-input::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+    .msg-input::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+    .msg-input { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+    .msg-input::placeholder { color: var(--text-faint); }
+    .msg-input:hover { border-color: var(--line-strong); }
+    .msg-input:focus {
+      border-color: rgba(62, 99, 221, 0.62);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+    .btn-expand {
+      width: 42px; height: 42px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.16s, border-color 0.16s, transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .btn-expand:hover { background: var(--bg-subtle); border-color: var(--line-strong); }
+    .btn-expand svg { width: 18px; height: 18px; color: var(--text-faint); transition: transform 0.2s ease; }
+    .btn-expand.active svg { transform: rotate(180deg); }
+    .btn-send {
+      width: 42px; height: 42px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.16s;
+      flex-shrink: 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+    .btn-send:hover { background: var(--accent-hover); }
+    .btn-send:disabled { opacity: 0.42; cursor: default; pointer-events: none; }
+    .btn-send svg { width: 18px; height: 18px; color: #fff; }
+
+    /* ── Hidden file input ── */
+    .hidden { display: none; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--toast-bg);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.22s ease;
+      pointer-events: none;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .header { padding: 0 16px; height: 52px; }
+      .header-divider { display: none; }
+      .header-status { display: none; }
+      .lobby-card { padding: 32px 24px; border-radius: var(--radius-lg); }
+      .waiting-card { padding: 32px 24px; border-radius: var(--radius-lg); }
+      .waiting-pin { font-size: 36px; }
+      .messages { padding: 16px; }
+      .msg { max-width: 85%; }
+      .input-bar { padding: 12px 14px; }
+      .pin-input-group { flex-direction: column; }
+      .btn-join { width: 100%; }
+      .device-popover { width: 200px; right: -8px; }
+      .lan-device-item { flex-wrap: wrap; }
+      .lan-device-connect { width: 100%; text-align: center; justify-content: center; margin-top: 4px; }
+    }
+    @media (min-width: 768px) {
+      .lobby-card { padding: 48px 44px; }
+      .msg { max-width: 55%; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      AirLink
+    </div>
+    <div class="header-divider"></div>
+    <div class="header-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">未连接</span>
+    </div>
+    <button class="theme-toggle" id="themeToggle" onclick="cycleTheme()" aria-label="切换主题" data-mode="auto">
+      <span class="theme-auto-badge"></span>
+    </button>
+    <div class="header-room" id="headerRoom" style="display:none">
+      <span class="pin-badge" id="headerPin"></span>
+      <div class="device-count" id="deviceCountBtn" onclick="toggleDevicePopover(event)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="deviceNum">1</span>
+        <div class="device-popover" id="devicePopover">
+          <div class="device-popover-title">已连接设备</div>
+          <div class="device-popover-list" id="devicePopoverList"></div>
+        </div>
+      </div>
+      <button class="btn-leave" id="btnLeave" onclick="leaveRoom()">离开</button>
+    </div>
+  </header>
+
+  <!-- Lobby -->
+  <div class="lobby" id="viewLobby">
+    <div class="lobby-card">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>AirLink</h1>
+          <p>轻量、安全、P2P 直传</p>
+        </div>
+      </div>
+      <p class="lobby-sub">无需注册，输入 PIN 即可连接设备<br/>文件与消息端到端直传，不经服务器</p>
+      <div class="name-section" id="nameSection">
+        <span class="name-label">你的名称</span>
+        <span class="name-display" id="nameDisplay"></span>
+        <button class="btn-name-edit" id="btnNameEdit" onclick="startEditName()" title="编辑名称">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+      <p class="name-hint" id="nameHint">系统自动分配，点击右侧图标自定义</p>
+      <div class="lobby-actions">
+        <button class="btn-primary" onclick="createRoom()">创建房间</button>
+        <div class="lobby-divider">或</div>
+        <div class="pin-input-group">
+          <input class="pin-input" id="joinPinInput" type="text" maxlength="6" placeholder="输入 6 位 PIN" oninput="onPinInput()" onkeydown="if(event.key==='Enter')joinRoom()">
+          <button class="btn-join" id="btnJoin" disabled onclick="joinRoom()">加入</button>
+        </div>
+        <div class="lan-section">
+          <div class="lan-header">
+            <span class="lan-title">局域网设备</span>
+            <button class="lan-scan-btn" id="lanScanBtn" onclick="scanLan()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="22 2 22 8 16 8"/></svg>
+              <span id="lanScanText">扫描</span>
+            </button>
+          </div>
+          <div class="lan-devices" id="lanDevices">
+            <div class="lan-empty" id="lanEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              点击扫描局域网内设备
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting -->
+  <div class="waiting" id="viewWaiting" style="display:none">
+    <div class="waiting-card">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>等待设备加入</h1>
+          <p>将 PIN 分享给要连接的设备</p>
+        </div>
+      </div>
+      <div class="waiting-pin" id="waitingPin">------</div>
+      <p class="waiting-hint">PIN 有效期 5 分钟，过期后需重新创建</p>
+      <div class="waiting-devices">
+        <div class="waiting-devices-title">已连接设备</div>
+        <div class="device-list" id="waitingDeviceList">
+          <div class="device-item">
+            <span class="device-dot"></span>
+            <span class="device-name" id="waitingSelfName"></span>
+            <span class="device-you">你</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room -->
+  <div class="room" id="viewRoom">
+    <div class="messages" id="messages"></div>
+    <div class="input-bar">
+      <button class="btn-attach" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <div class="input-wrapper">
+        <textarea class="msg-input" id="msgInput" placeholder="输入消息…" rows="1" onkeydown="onMsgKey(event)" oninput="onInputResize()"></textarea>
+      </div>
+      <button class="btn-expand" id="btnExpand" onclick="toggleExpand()" title="展开/收回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="btn-send" id="btnSend" disabled onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+      <input type="file" class="hidden" id="fileInput" onchange="onFileSelect(event)" multiple>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+
+  let state = 'lobby';
+  let currentPin = '';
+  let userName = '';
+  let isEditingName = false;
+  let devices = [];
+  let isHost = false;
+
+  // ── Name Management ──
+  const NAME_KEY = 'airlink-username';
+
+  function generateDefaultName() {
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    if (/android/i.test(ua)) return 'Android 设备';
+    if (/iPad|iPhone|iPod/.test(platform) || /iPad|iPhone|iPod/.test(ua)) return 'iOS 设备';
+    if (/Win/.test(platform)) return 'Windows PC';
+    if (/Mac/.test(platform)) {
+      const names = ['MacBook', 'iMac', 'Mac mini'];
+      return names[Math.floor(Math.random() * names.length)];
+    }
+    if (/Linux/.test(platform)) return 'Linux 工作站';
+    return '我的设备';
+  }
+
+  function getUserName() {
+    const stored = localStorage.getItem(NAME_KEY);
+    if (stored && stored.trim()) return stored.trim();
+    const auto = generateDefaultName();
+    localStorage.setItem(NAME_KEY, auto);
+    return auto;
+  }
+
+  function setUserName(name) {
+    userName = name;
+    localStorage.setItem(NAME_KEY, name);
+    $('nameDisplay').textContent = name;
+    // Update devices array self entry
+    devices = devices.map(d => d.you ? { ...d, name: name } : d);
+    updateDeviceList();
+    renderDevicePopover();
+    if (deviceNum) deviceNum.textContent = devices.length;
+  }
+
+  userName = getUserName();
+
+  window.startEditName = function () {
+    const display = $('nameDisplay');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'name-edit-input';
+    input.value = userName;
+    input.maxLength = 20;
+    display.replaceWith(input);
+    input.focus();
+    input.select();
+    isEditingName = true;
+
+    function commit() {
+      const val = input.value.trim();
+      if (val) setUserName(val);
+      else setUserName(userName);
+      const span = document.createElement('span');
+      span.className = 'name-display';
+      span.id = 'nameDisplay';
+      span.textContent = userName;
+      input.replaceWith(span);
+      isEditingName = false;
+      $('nameHint').textContent = '点击右侧图标自定义名称';
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      if (e.key === 'Escape') { input.value = userName; commit(); }
+    });
+  };
+
+  // ── Theme Toggle (3-state: auto → light → dark) ──
+  const THEME_KEY = 'airlink-theme';
+  const themeToggle = document.getElementById('themeToggle');
+  const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  const themeIcons = {
+    auto: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+    </svg>`,
+    light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>`,
+    dark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>`
+  };
+  const themeLabels = { auto: '自动（跟随系统）', light: '浅色模式', dark: '暗色模式' };
+
+  function getThemeMode() {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'auto' || stored === 'light' || stored === 'dark') return stored;
+    return 'auto';
+  }
+
+  function resolveTheme(mode) {
+    if (mode === 'auto') return themeMediaQuery.matches ? 'dark' : 'light';
+    return mode;
+  }
+
+  function applyTheme(mode) {
+    const resolved = resolveTheme(mode);
+    document.documentElement.setAttribute('data-theme', resolved);
+    localStorage.setItem(THEME_KEY, mode);
+    themeToggle.setAttribute('data-mode', mode);
+    themeToggle.innerHTML = themeIcons[mode] + '<span class="theme-auto-badge"></span>';
+    themeToggle.setAttribute('aria-label', themeLabels[mode]);
+  }
+
+  window.cycleTheme = function() {
+    const order = ['auto', 'light', 'dark'];
+    const current = getThemeMode();
+    const next = order[(order.indexOf(current) + 1) % 3];
+    applyTheme(next);
+    showToast('主题: ' + themeLabels[next]);
+  };
+
+  applyTheme(getThemeMode());
+
+  // Init name display
+  $('nameDisplay').textContent = userName;
+
+  themeMediaQuery.addEventListener('change', () => {
+    if (getThemeMode() === 'auto') applyTheme('auto');
+  });
+
+  // ── Device Popover ──
+  const devicePopover = document.getElementById('devicePopover');
+  const devicePopoverList = document.getElementById('devicePopoverList');
+  let popoverOpen = false;
+
+  function renderDevicePopover() {
+    devicePopoverList.innerHTML = devices.map(d => `
+      <div class="device-popover-item">
+        <span class="device-popover-dot"></span>
+        <span class="device-popover-name">${escHtml(d.name)}</span>
+        ${d.you ? '<span class="device-popover-you">你</span>' : ''}
+      </div>
+    `).join('');
+  }
+
+  window.toggleDevicePopover = function(e) {
+    e.stopPropagation();
+    popoverOpen = !popoverOpen;
+    devicePopover.classList.toggle('open', popoverOpen);
+    if (popoverOpen) renderDevicePopover();
+  };
+
+  document.addEventListener('click', (e) => {
+    if (popoverOpen && !devicePopover.contains(e.target)) {
+      popoverOpen = false;
+      devicePopover.classList.remove('open');
+    }
+  });
+
+  // ── LAN Scan ──
+  let lanDevices = [];
+  let scanning = false;
+
+  const fakeLanDevices = [
+    { name: 'DESKTOP-A1B2C3', ip: '192.168.1.105' },
+    { name: 'iPhone-小明', ip: '192.168.1.42' },
+    { name: 'MacBook-Pro', ip: '192.168.1.88' },
+    { name: 'Living-Room-TV', ip: '192.168.1.200' },
+  ];
+
+  function renderLanDevices() {
+    const container = document.getElementById('lanDevices');
+    const empty = document.getElementById('lanEmpty');
+    if (lanDevices.length === 0) {
+      container.innerHTML = '';
+      container.appendChild(empty);
+      empty.style.display = '';
+      return;
+    }
+    container.innerHTML = lanDevices.map(d => `
+      <div class="lan-device-item">
+        <span class="lan-device-dot"></span>
+        <div class="lan-device-info">
+          <div class="lan-device-name">${escHtml(d.name)}</div>
+          <div class="lan-device-ip">${escHtml(d.ip)}</div>
+        </div>
+        <button class="lan-device-connect" onclick="connectLanDevice('${escHtml(d.name)}')">连接</button>
+      </div>
+    `).join('');
+  }
+
+  window.scanLan = function() {
+    if (scanning) return;
+    scanning = true;
+    const btn = document.getElementById('lanScanBtn');
+    const txt = document.getElementById('lanScanText');
+    btn.classList.add('scanning');
+    btn.disabled = true;
+    txt.textContent = '扫描中…';
+    lanDevices = [];
+    renderLanDevices();
+
+    let found = 0;
+    const interval = setInterval(() => {
+      if (found < fakeLanDevices.length && Math.random() > 0.3) {
+        lanDevices.push(fakeLanDevices[found]);
+        renderLanDevices();
+        found++;
+      }
+      if (found >= fakeLanDevices.length) {
+        clearInterval(interval);
+        scanning = false;
+        btn.classList.remove('scanning');
+        btn.disabled = false;
+        txt.textContent = '重新扫描';
+        showToast('发现 ' + lanDevices.length + ' 台局域网设备');
+      }
+    }, 600 + Math.random() * 800);
+
+    setTimeout(() => {
+      if (scanning) {
+        clearInterval(interval);
+        scanning = false;
+        btn.classList.remove('scanning');
+        btn.disabled = false;
+        txt.textContent = lanDevices.length > 0 ? '重新扫描' : '扫描';
+        if (lanDevices.length > 0) showToast('发现 ' + lanDevices.length + ' 台局域网设备');
+        else showToast('未发现局域网设备');
+      }
+    }, 6000);
+  };
+
+  window.connectLanDevice = function(name) {
+    showToast('正在连接 ' + name + '…');
+    setTimeout(() => {
+      currentPin = genPin();
+      isHost = true;
+      devices = [
+        { name: userName, you: true },
+        { name: name, you: false }
+      ];
+      $('waitingPin').textContent = currentPin;
+      updateDeviceList();
+      switchView('waiting');
+      headerPin.textContent = currentPin;
+      setTimeout(() => {
+        if (state !== 'waiting') return;
+        addDevice(name);
+        showToast(name + ' 已加入');
+        setTimeout(() => enterRoom(), 800);
+      }, 1500);
+    }, 800);
+  };
+
+  const viewLobby = $('viewLobby');
+  const viewWaiting = $('viewWaiting');
+  const viewRoom = $('viewRoom');
+  const headerRoom = $('headerRoom');
+  const statusDot = $('statusDot');
+  const statusText = $('statusText');
+  const headerPin = $('headerPin');
+  const deviceNum = $('deviceNum');
+  const messages = $('messages');
+  const msgInput = $('msgInput');
+  const btnSend = $('btnSend');
+
+  function genPin() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  function showToast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function switchView(v) {
+    state = v;
+    viewLobby.style.display = v === 'lobby' ? 'flex' : 'none';
+    viewWaiting.style.display = v === 'waiting' ? 'flex' : 'none';
+    viewRoom.classList.toggle('active', v === 'room');
+    headerRoom.style.display = v === 'lobby' ? 'none' : 'flex';
+    statusDot.classList.toggle('online', v !== 'lobby');
+    statusText.textContent = v === 'lobby' ? '未连接' : (v === 'waiting' ? '等待加入' : '已连接');
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      messages.scrollTop = messages.scrollHeight;
+    });
+  }
+
+  function timeStr() {
+    return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ── Create Room ──
+  window.createRoom = function () {
+    currentPin = genPin();
+    isHost = true;
+    devices = [{ name: userName, you: true }];
+    $('waitingPin').textContent = currentPin;
+    updateDeviceList();
+    switchView('waiting');
+
+    setTimeout(() => {
+      if (state !== 'waiting') return;
+      addDevice('MacBook Pro');
+      showToast('新设备已加入');
+      setTimeout(() => enterRoom(), 800);
+    }, 3000 + Math.random() * 2000);
+  };
+
+  // ── Join Room ──
+  window.joinRoom = function () {
+    const pin = $('joinPinInput').value.trim();
+    if (pin.length !== 6) return;
+    currentPin = pin;
+    isHost = false;
+    devices = [
+      { name: userName, you: true },
+      { name: 'Windows PC', you: false }
+    ];
+    deviceNum.textContent = devices.length;
+    renderDevicePopover();
+    switchView('room');
+    headerPin.textContent = currentPin;
+    addSystemMsg('已连接到房间 ' + currentPin);
+    addSystemMsg('Windows PC 加入了房间');
+    setTimeout(() => {
+      addOtherMsg('你好！文件准备好了，马上发给你。', 'Windows PC');
+    }, 1200);
+  };
+
+  function enterRoom() {
+    headerPin.textContent = currentPin;
+    deviceNum.textContent = devices.length;
+    renderDevicePopover();
+    switchView('room');
+    addSystemMsg('房间已创建 — PIN: ' + currentPin);
+    addSystemMsg('MacBook Pro 加入了房间');
+    setTimeout(() => {
+      addOtherMsg('已连接！需要传什么文件？', 'MacBook Pro');
+    }, 1000);
+  }
+
+  function addDevice(name) {
+    devices.push({ name, you: false });
+    updateDeviceList();
+    renderDevicePopover();
+    deviceNum.textContent = devices.length;
+  }
+
+  function updateDeviceList() {
+    const list = $('waitingDeviceList');
+    const selfName = $('waitingSelfName');
+    if (selfName) selfName.textContent = userName;
+    list.querySelectorAll('.device-item:not(:first-child)').forEach(el => el.remove());
+    devices.filter(d => !d.you).forEach(d => {
+      const div = document.createElement('div');
+      div.className = 'device-item';
+      div.innerHTML = `
+        <span class="device-dot"></span>
+        <span class="device-name">${escHtml(d.name)}</span>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  // ── Messages ──
+  function addSystemMsg(text) {
+    const el = document.createElement('div');
+    el.className = 'msg-system';
+    el.textContent = text;
+    messages.appendChild(el);
+    scrollToBottom();
+  }
+
+  function addSelfMsg(text) {
+    const el = document.createElement('div');
+    el.className = 'msg self';
+    el.innerHTML = `
+      <div class="msg-bubble">${escHtml(text)}</div>
+      <div class="msg-time">${timeStr()}</div>
+    `;
+    messages.appendChild(el);
+    scrollToBottom();
+  }
+
+  function addOtherMsg(text, sender) {
+    const el = document.createElement('div');
+    el.className = 'msg other';
+    el.innerHTML = `
+      <div class="msg-sender">${escHtml(sender)}</div>
+      <div class="msg-bubble">${escHtml(text)}</div>
+      <div class="msg-time">${timeStr()}</div>
+    `;
+    messages.appendChild(el);
+    scrollToBottom();
+  }
+
+  function addFileCard(name, size, sender, isSelf, fileObj) {
+    const el = document.createElement('div');
+    el.className = isSelf ? 'msg self' : 'msg other';
+    if (!isSelf) {
+      el.innerHTML = `<div class="msg-sender">${escHtml(sender)}</div>`;
+    }
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    const ext = name.split('.').pop().toLowerCase();
+    let previewHtml = '';
+    if (fileObj) {
+      const isImage = /^jpe?g|png|gif|webp|svg|bmp|ico$/.test(ext);
+      const isVideo = /^mp4|webm|ogv|mov$/.test(ext);
+      const isAudio = /^mp3|wav|ogg|aac|flac|m4a$/.test(ext);
+      const isPdf = ext === 'pdf';
+      const isText = /^txt|json|csv|md|log|xml|yaml|yml|toml|ini|cfg|conf|js|ts|jsx|tsx|py|rb|go|rs|java|c|cpp|h|css|html|sh|ps1|bat|sql$/.test(ext);
+      if (isImage) {
+        const url = URL.createObjectURL(fileObj);
+        previewHtml = `<div class="file-preview"><img src="${url}" alt="${escHtml(name)}" loading="lazy" /></div>`;
+      } else if (isVideo) {
+        const url = URL.createObjectURL(fileObj);
+        previewHtml = `<div class="file-preview"><video src="${url}" controls preload="metadata" playsinline></video></div>`;
+      } else if (isAudio) {
+        const url = URL.createObjectURL(fileObj);
+        previewHtml = `<div class="file-preview"><div class="file-preview-audio"><div class="file-preview-audio-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><audio src="${url}" controls preload="metadata"></audio></div></div>`;
+      } else if (isPdf) {
+        previewHtml = `<div class="file-preview"><div class="file-preview-audio"><div class="file-preview-audio-icon" style="background:#fef2f2;border-color:rgba(231,76,60,0.15);"><svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span style="font-size:13px;color:var(--text-soft);">PDF 文档</span></div></div>`;
+      } else if (isText && size < 512000) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const textEl = card.querySelector('.file-preview-text');
+          if (textEl) textEl.textContent = ev.target.result.slice(0, 3000);
+        };
+        reader.readAsText(fileObj);
+        previewHtml = `<div class="file-preview-text">加载中…</div>`;
+      }
+    }
+    card.innerHTML = `
+      ${previewHtml}
+      <div class="file-header">
+        <div class="file-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="file-info">
+          <div class="file-name">${escHtml(name)}</div>
+          <div class="file-size">${formatSize(size)}</div>
+        </div>
+      </div>
+      <div class="file-progress"><div class="file-progress-bar" style="width:0%"></div></div>
+      <div class="file-status">
+        <span class="status-text">传输中…</span>
+        <span>0%</span>
+      </div>
+    `;
+    el.appendChild(card);
+    messages.appendChild(el);
+    scrollToBottom();
+    simulateProgress(card, name, isSelf);
+  }
+
+  function simulateProgress(card, fileName, isSelf) {
+    let pct = 0;
+    const bar = card.querySelector('.file-progress-bar');
+    const sText = card.querySelector('.status-text');
+    const sPct = card.querySelector('.file-status span:last-child');
+    const interval = setInterval(() => {
+      pct += Math.random() * 15 + 5;
+      if (pct >= 100) {
+        pct = 100;
+        clearInterval(interval);
+        bar.style.width = '100%';
+        bar.classList.add('done');
+        sText.textContent = '传输完成';
+        sText.classList.add('done');
+        sPct.textContent = '100%';
+        if (!isSelf) {
+          const status = card.querySelector('.file-status');
+          const dlBtn = document.createElement('button');
+          dlBtn.className = 'btn-download';
+          dlBtn.textContent = '保存';
+          dlBtn.onclick = () => showToast('文件已保存');
+          status.appendChild(dlBtn);
+        }
+      } else {
+        bar.style.width = pct + '%';
+        sPct.textContent = Math.round(pct) + '%';
+      }
+    }, 200 + Math.random() * 300);
+  }
+
+  // ── Send Message ──
+  window.sendMessage = function () {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    addSelfMsg(text);
+    msgInput.value = '';
+    msgInput.style.height = '42px';
+    msgInput.style.overflowY = 'hidden';
+    btnSend.disabled = true;
+
+    const replies = [
+      '收到！',
+      '好的，我看一下。',
+      '文件收到了，谢谢！',
+      '马上处理。',
+      '没问题，稍等。',
+      '已确认，继续吧。'
+    ];
+    setTimeout(() => {
+      addOtherMsg(replies[Math.floor(Math.random() * replies.length)], 'MacBook Pro');
+    }, 800 + Math.random() * 1500);
+  };
+
+  window.onMsgKey = function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+    setTimeout(() => {
+      btnSend.disabled = !msgInput.value.trim();
+    }, 0);
+  };
+
+  window.autoResize = function (el) {
+    el.style.height = 'auto';
+    const maxH = 200;
+    el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+  };
+
+  // ── Expand / Collapse ──
+  let isExpanded = false;
+  window.toggleExpand = function () {
+    isExpanded = !isExpanded;
+    const ta = document.getElementById('msgInput');
+    const btn = document.getElementById('btnExpand');
+    if (isExpanded) {
+      ta.classList.add('expanded');
+      btn.classList.add('active');
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+      ta.style.overflowY = ta.scrollHeight > 160 ? 'auto' : 'hidden';
+    } else {
+      ta.classList.remove('expanded');
+      ta.style.height = '42px';
+      ta.style.overflowY = 'hidden';
+      btn.classList.remove('active');
+    }
+    ta.focus();
+  };
+  window.onInputResize = function () {
+    const ta = document.getElementById('msgInput');
+    const minH = 42;
+    const maxH = 160;
+    ta.style.height = 'auto';
+    const h = Math.max(minH, Math.min(ta.scrollHeight, maxH));
+    ta.style.height = h + 'px';
+    ta.style.overflowY = ta.scrollHeight > maxH ? 'auto' : 'hidden';
+  };
+
+  // ── File Transfer ──
+  window.onFileSelect = function (e) {
+    const files = Array.from(e.target.files);
+    files.forEach(f => {
+      addFileCard(f.name, f.size, userName, true, f);
+      setTimeout(() => {
+        const peerFiles = [
+          { name: '回复文档.pdf', size: 245000 },
+          { name: '截图.png', size: 1820000 },
+          { name: '备份.zip', size: 15600000 },
+          { name: '设计稿.sketch', size: 8900000 },
+          { name: '会议录音.mp3', size: 4500000 },
+          { name: '代码.tsx', size: 12000 },
+        ];
+        const pick = peerFiles[Math.floor(Math.random() * peerFiles.length)];
+        addFileCard(pick.name, pick.size, 'MacBook Pro', false, null);
+      }, 2000 + Math.random() * 3000);
+    });
+    e.target.value = '';
+  };
+
+  // ── Join Input ──
+  window.onPinInput = function () {
+    const v = $('joinPinInput').value.replace(/\D/g, '').slice(0, 6);
+    $('joinPinInput').value = v;
+    $('btnJoin').disabled = v.length !== 6;
+  };
+
+  // ── Leave Room ──
+  window.leaveRoom = function () {
+    currentPin = '';
+    devices = [];
+    $('joinPinInput').value = '';
+    $('btnJoin').disabled = true;
+    messages.innerHTML = '';
+    switchView('lobby');
+  };
+
+})();
+</script>
+</body>
+</html>

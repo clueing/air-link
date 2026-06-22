@@ -1,0 +1,40 @@
+# AirLink 配置文件
+
+# 服务器配置
+server:
+  port: 8080                    # HTTP/WebSocket 端口
+  host: "0.0.0.0"              # 监听地址
+  auto_open_browser: true       # 启动时自动打开浏览器
+
+# WebRTC 配置
+webrtc:
+  stun_servers:
+    - "stun:stun.l.google.com:19302"
+    - "stun:stun1.l.google.com:19302"
+  turn_servers: []               # 可选，用户自行配置
+    # - url: "turn:your-turn-server.com:3478"
+    #   username: "user"
+    #   credential: "pass"
+
+# PIN 房间配置
+room:
+  pin_expiry: 300                # PIN 有效期（秒）
+  max_devices: 10                # 单个房间最多设备数
+
+# 安全配置
+security:
+  rate_limit:
+    max_attempts: 5              # 最大尝试次数
+    window_time: 60              # 时间窗口（秒）
+    lockout_time: 600            # 锁定时间（秒）
+
+# 局域网发现
+discovery:
+  mdns_enabled: true             # 启用 mDNS
+  http_probe_enabled: true       # 启用 HTTP 探测
+  service_name: "_airlink._tcp"  # mDNS 服务名称
+
+# 日志配置
+logging:
+  level: "info"                  # debug, info, warn, error
+  file: ""                       # 空字符串表示仅输出到控制台
