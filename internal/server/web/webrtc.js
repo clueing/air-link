@@ -23,22 +23,13 @@ class WebRTCManager {
 
   // 创建 P2P 连接
   async createConnection(deviceId, isInitiator) {
-    // 如果连接已存在，检查是否需要替换
+    // 如果连接已存在且稳定，返回现有连接
     if (this.connections.has(deviceId)) {
       const existingPc = this.connections.get(deviceId);
       const existingState = existingPc.signalingState;
 
-      // 如果现有连接处于稳定状态且不是发起方，返回现有连接
-      if (existingState === 'stable' || existingState === 'have-local-offer') {
-        console.log(`连接已存在且状态为 ${existingState}: ${deviceId}`);
-        return existingPc;
-      }
-
-      // 如果出现竞态，关闭旧连接
-      console.warn(`检测到竞态条件，关闭旧连接: ${deviceId}`);
-      existingPc.close();
-      this.connections.delete(deviceId);
-      this.dataChannels.delete(deviceId);
+      console.log(`连接已存在且状态为 ${existingState}: ${deviceId}`);
+      return existingPc;
     }
 
     const config = {
@@ -167,10 +158,17 @@ class WebRTCManager {
       return;
     }
 
+    // 检查 remote description 是否已设置
+    if (!pc.remoteDescription) {
+      console.warn(`远程描述未设置，暂缓添加 ICE 候选: ${deviceId}`);
+      // ICE 候选会在 remote description 设置后自动重试
+      return;
+    }
+
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
     } catch (error) {
-      console.error(`添加 ICE 候选失败 [${deviceId}]:`, error);
+      console.error(`添加 ICE 候选失败 [${deviceId}]:`, error.message);
     }
   }
 

@@ -148,27 +148,54 @@ class AirLinkApp {
 
       try {
         if (signal.type === 'offer') {
-          // 收到 offer，创建连接并发送 answer
-          const pc = await this.webrtc.createConnection(fromDeviceId, false);
+          // 收到 offer
+          let pc = this.webrtc.connections.get(fromDeviceId);
 
-          // 检查连接状态，避免在错误状态下设置 remote description
-          if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
-            console.warn(`收到 offer 但状态不对: ${pc.signalingState}，忽略`);
-            return;
+          // Offer 冲突解决：使用字典序比较 device ID
+          if (pc && pc.signalingState === 'have-local-offer') {
+            console.log('检测到 offer 冲突，使用字典序解决');
+            const isImpolite = this.signaling.deviceId > fromDeviceId;
+
+            if (isImpolite) {
+              // 我是 impolite 方，忽略对方的 offer
+              console.log('我是 impolite 方，忽略收到的 offer');
+              return;
+            } else {
+              // 我是 polite 方，回滚自己的 offer，接受对方的 offer
+              console.log('我是 polite 方，回滚本地 offer');
+              await pc.setLocalDescription({ type: 'rollback' });
+            }
           }
 
-          const answer = await this.webrtc.createAnswer(fromDeviceId, signal);
-          this.signaling.sendSignal(fromDeviceId, answer);
+          // 创建或获取连接
+          pc = await this.webrtc.createConnection(fromDeviceId, false);
+
+          // 设置远程描述
+          await pc.setRemoteDescription(new RTCSessionDescription(signal));
+
+          // 创建并发送 answer
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          this.signaling.sendSignal(fromDeviceId, {
+            type: 'answer',
+            sdp: answer.sdp
+          });
 
         } else if (signal.type === 'answer') {
           // 收到 answer
           const pc = this.webrtc.connections.get(fromDeviceId);
 
+          if (!pc) {
+            console.warn('收到 answer 但连接不存在');
+            return;
+          }
+
           // 只有在 have-local-offer 状态下才能设置 remote answer
-          if (pc && pc.signalingState === 'have-local-offer') {
-            await this.webrtc.handleAnswer(fromDeviceId, signal);
+          if (pc.signalingState === 'have-local-offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal));
           } else {
-            console.warn(`收到 answer 但状态不对: ${pc ? pc.signalingState : 'no-connection'}，忽略`);
+            console.warn(`收到 answer 但状态不对: ${pc.signalingState}，忽略`);
           }
 
         } else if (signal.type === 'ice') {
