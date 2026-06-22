@@ -1,0 +1,32 @@
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+go.work
+
+# 构建输出
+dist/
+bin/
+
+# 日志
+*.log
+
+# 配置（可选）
+airlink.local.yaml
+.env
+
+# 临时文件
+tmp/
+temp/
