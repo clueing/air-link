@@ -153,6 +153,114 @@ window.onMsgKey = function (e) {
 
 ---
 
+### 6. ✅ 局域网扫描功能报错
+**问题描述**：点击"扫描局域网"按钮时控制台报错 `renderLanDevices is not defined`
+
+**原因分析**：
+- `renderLanDevices` 函数在代码重构时被意外删除
+- 函数调用存在但函数定义缺失
+
+**修复方案**：
+```javascript
+function renderLanDevices() {
+  const container = document.getElementById('lanDevices');
+  const empty = document.getElementById('lanEmpty');
+
+  if (!container) return;
+
+  if (lanDevices.length === 0) {
+    container.innerHTML = '';
+    if (empty) {
+      container.appendChild(empty);
+      empty.style.display = '';
+    }
+    return;
+  }
+
+  container.innerHTML = lanDevices.map(d => `
+    <div class="lan-device-item">
+      <span class="lan-device-dot"></span>
+      <div class="lan-device-info">
+        <div class="lan-device-name">${escHtml(d.device_name || d.name || '未知设备')}</div>
+        <div class="lan-device-ip">${escHtml(d.ip || '')}</div>
+      </div>
+      <button class="lan-device-connect">连接</button>
+    </div>
+  `).join('');
+}
+```
+
+**提交**: `4e2d3f0 fix(ui): 添加缺失的 renderLanDevices 函数`
+
+---
+
+### 7. ✅ WebRTC 连接竞态条件
+**问题描述**：当别人加入房间时，控制台报错：
+```
+InvalidStateError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': 
+Failed to set remote answer sdp: Called in wrong state: stable
+```
+
+**原因分析**：
+- 双方同时发起 WebRTC 连接时出现竞态条件
+- 一方已经在 `stable` 状态时收到对方的 `answer`
+- 没有检查 `signalingState` 就调用 `setRemoteDescription`
+
+**修复方案**：
+
+**1. 在接收 offer/answer 前检查状态：**
+```javascript
+if (signal.type === 'offer') {
+  const pc = await this.webrtc.createConnection(fromDeviceId, false);
+  
+  // 检查连接状态
+  if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
+    console.warn(`收到 offer 但状态不对: ${pc.signalingState}，忽略`);
+    return;
+  }
+  
+  const answer = await this.webrtc.createAnswer(fromDeviceId, signal);
+  this.signaling.sendSignal(fromDeviceId, answer);
+}
+
+if (signal.type === 'answer') {
+  const pc = this.webrtc.connections.get(fromDeviceId);
+  
+  // 只有在 have-local-offer 状态下才能设置 remote answer
+  if (pc && pc.signalingState === 'have-local-offer') {
+    await this.webrtc.handleAnswer(fromDeviceId, signal);
+  } else {
+    console.warn(`收到 answer 但状态不对，忽略`);
+  }
+}
+```
+
+**2. 改进连接创建逻辑：**
+```javascript
+async createConnection(deviceId, isInitiator) {
+  if (this.connections.has(deviceId)) {
+    const existingPc = this.connections.get(deviceId);
+    const existingState = existingPc.signalingState;
+
+    // 如果现有连接处于稳定状态，返回现有连接
+    if (existingState === 'stable' || existingState === 'have-local-offer') {
+      return existingPc;
+    }
+
+    // 如果出现竞态，关闭旧连接
+    console.warn(`检测到竞态条件，关闭旧连接: ${deviceId}`);
+    existingPc.close();
+    this.connections.delete(deviceId);
+  }
+  
+  // 创建新连接...
+}
+```
+
+**提交**: `9b2430d fix(webrtc): 修复双方同时发起连接时的竞态条件`
+
+---
+
 ## 局域网扫描说明
 
 **状态**：功能已实现，但可能受网络环境限制
