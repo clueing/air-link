@@ -861,6 +861,9 @@
       border-color: rgba(62, 99, 221, 0.62);
       box-shadow: 0 0 0 4px var(--accent-glow);
     }
+    .msg-input.expanded {
+      min-height: 100px;
+    }
     .btn-expand {
       width: 42px; height: 42px;
       background: var(--panel-strong);
@@ -930,6 +933,32 @@
     @media (min-width: 768px) {
       .lobby-card { padding: 48px 44px; }
       .msg { max-width: 55%; }
+    }
+
+    /* PIN 复制按钮 */
+    .btn-copy-pin {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-copy-pin:hover {
+      background: var(--bg-subtle);
+      border-color: var(--accent);
+    }
+    .btn-copy-pin svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text-soft);
+    }
+    .btn-copy-pin:hover svg {
+      color: var(--accent);
     }
 
     /* 移动端优化 */
@@ -1049,7 +1078,15 @@
           <p>将 PIN 分享给要连接的设备</p>
         </div>
       </div>
-      <div class="waiting-pin" id="waitingPin">------</div>
+      <div style="display: flex; align-items: center; gap: 12px; justify-content: center;">
+        <div class="waiting-pin" id="waitingPin">------</div>
+        <button class="btn-copy-pin" id="btnCopyPin" onclick="copyPin()" title="复制 PIN">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
       <p class="waiting-hint">PIN 有效期 5 分钟，过期后需重新创建</p>
       <div class="waiting-devices">
         <div class="waiting-devices-title">已连接设备</div>
@@ -1423,6 +1460,26 @@
       userName = deviceInfo.name;
       $('nameDisplay').textContent = userName;
 
+      // 尝试从 localStorage 恢复房间状态
+      const savedRoom = localStorage.getItem('airlink-room');
+      if (savedRoom) {
+        try {
+          const roomData = JSON.parse(savedRoom);
+          if (roomData.pin && Date.now() - roomData.timestamp < 5 * 60 * 1000) {
+            // PIN 未过期（5分钟内），尝试重新加入
+            console.log('尝试恢复房间:', roomData.pin);
+            setTimeout(() => {
+              $('joinPinInput').value = roomData.pin;
+              window.joinRoom();
+            }, 1000);
+          } else {
+            localStorage.removeItem('airlink-room');
+          }
+        } catch (e) {
+          localStorage.removeItem('airlink-room');
+        }
+      }
+
       // 设置回调
       app.onRoomCreated((room) => {
         currentPin = room.pin;
@@ -1432,6 +1489,12 @@
         updateDeviceList();
         switchView('waiting');
         showToast('房间已创建');
+
+        // 保存到 localStorage
+        localStorage.setItem('airlink-room', JSON.stringify({
+          pin: currentPin,
+          timestamp: Date.now()
+        }));
       });
 
       app.onRoomJoined((room, deviceList) => {
@@ -1446,6 +1509,15 @@
         switchView('room');
         headerPin.textContent = currentPin;
         addSystemMsg('已连接到房间 ' + currentPin);
+
+        // 保存到 localStorage
+        localStorage.setItem('airlink-room', JSON.stringify({
+          pin: currentPin,
+          timestamp: Date.now()
+        }));
+
+        // 不要主动发起连接，等待现有设备发起
+        // connectToAllDevices() 已删除
       });
 
       app.onDeviceJoined((device) => {
@@ -1589,7 +1661,7 @@
     const el = document.createElement('div');
     el.className = 'msg self';
     el.innerHTML = `
-      <div class="msg-bubble">${escHtml(text)}</div>
+      <div class="msg-bubble">${escHtml(text).replace(/\n/g, '<br>')}</div>
       <div class="msg-time">${timeStr()}</div>
     `;
     messages.appendChild(el);
@@ -1601,7 +1673,7 @@
     el.className = 'msg other';
     el.innerHTML = `
       <div class="msg-sender">${escHtml(sender)}</div>
-      <div class="msg-bubble">${escHtml(text)}</div>
+      <div class="msg-bubble">${escHtml(text).replace(/\n/g, '<br>')}</div>
       <div class="msg-time">${timeStr()}</div>
     `;
     messages.appendChild(el);
@@ -1809,6 +1881,36 @@
     const cards = document.querySelectorAll('.file-card');
     for (const card of cards) {
       if (card.dataset.fileId === fileId) {
+        // 添加预览
+        const ext = result.name.split('.').pop().toLowerCase();
+        const isImage = /^jpe?g|png|gif|webp|svg|bmp|ico$/.test(ext);
+        const isVideo = /^mp4|webm|ogv|mov$/.test(ext);
+        const isAudio = /^mp3|wav|ogg|aac|flac|m4a$/.test(ext);
+
+        let preview = card.querySelector('.file-preview');
+        if (!preview && (isImage || isVideo || isAudio)) {
+          const url = URL.createObjectURL(result.blob);
+          const fileHeader = card.querySelector('.file-header');
+
+          if (isImage) {
+            preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `<img src="${url}" alt="${escHtml(result.name)}" loading="lazy" />`;
+            fileHeader.parentNode.insertBefore(preview, fileHeader);
+          } else if (isVideo) {
+            preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `<video src="${url}" controls preload="metadata" playsinline></video>`;
+            fileHeader.parentNode.insertBefore(preview, fileHeader);
+          } else if (isAudio) {
+            preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `<div class="file-preview-audio"><div class="file-preview-audio-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><audio src="${url}" controls preload="metadata"></audio></div>`;
+            fileHeader.parentNode.insertBefore(preview, fileHeader);
+          }
+        }
+
+        // 添加下载按钮
         const status = card.querySelector('.file-status');
         const dlBtn = document.createElement('button');
         dlBtn.className = 'btn-download';
@@ -1832,6 +1934,26 @@
     $('btnJoin').disabled = v.length !== 6;
   };
 
+  // ── Copy PIN ──
+  window.copyPin = async function () {
+    if (!currentPin) return;
+
+    try {
+      await navigator.clipboard.writeText(currentPin);
+      showToast('PIN 已复制到剪贴板');
+
+      // 动画反馈
+      const btn = $('btnCopyPin');
+      btn.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        btn.style.transform = 'scale(1)';
+      }, 150);
+    } catch (error) {
+      console.error('复制失败:', error);
+      showToast('复制失败，请手动复制');
+    }
+  };
+
   // ── Leave Room ──
   window.leaveRoom = function () {
     if (app) {
@@ -1843,6 +1965,9 @@
     $('btnJoin').disabled = true;
     messages.innerHTML = '';
     switchView('lobby');
+
+    // 清除保存的房间状态
+    localStorage.removeItem('airlink-room');
   };
 
   // ── 更新设备名称 ──
