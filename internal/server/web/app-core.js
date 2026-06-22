@@ -25,8 +25,9 @@ class AirLinkApp {
     // 设置 ICE 服务器
     this.webrtc.setIceServers(config.stun_servers, config.turn_servers || []);
 
-    // 连接信令服务器
-    const wsUrl = `ws://${window.location.host}/ws`;
+    // 连接信令服务器（自动根据页面协议选择 ws 或 wss）
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
     this.signaling = new SignalingClient(wsUrl);
 
     // 注册信令消息处理器
