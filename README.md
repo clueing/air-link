@@ -1,31 +1,37 @@
 # AirLink
 
-**AirLink** 是一个基于网页的 P2P 文件和消息传输工具，支持局域网自动发现和公网 PIN 配对连接，实现类似 AirDrop 的体验。
+**AirLink** 是一个基于网页的 P2P 文件和消息传输工具，支持 PIN 码配对连接，实现类似 AirDrop 的体验。
 
 ## 特性
 
 - ✨ **无需注册登录**：打开即用，输入 PIN 即可连接
 - 🔒 **P2P 直连**：文件和消息端到端直传，不经服务器
-- 🌐 **局域网发现**：自动发现同一局域网内的设备
-- 🌍 **公网支持**：通过 PIN 码配对，支持跨网络传输
+- 🌍 **PIN 码房间**：通过 6 位 PIN 码配对，支持局域网和跨网络传输
+- 📱 **二维码加入**：扫码即可自动加入房间，移动端更方便
+- 🔗 **一键分享**：复制带 PIN 的链接，发送给对方即可连接
 - 💻 **跨平台**：支持 Windows/macOS/Linux，单个可执行文件
-- 📱 **移动端兼容**：浏览器访问，支持手机和平板
+- 📲 **移动端兼容**：浏览器访问，支持手机和平板
 
 ## 快速开始
 
-### 下载
+### 构建
 
-前往 [Releases](https://github.com/yourusername/air-link/releases) 页面下载对应平台的可执行文件。
+克隆仓库并构建：
 
-### 5 分钟快速入门
-
-详细的快速入门指南请查看：**[📖 快速入门指南](docs/QUICKSTART.md)**
+```bash
+git clone https://github.com/clueing/air-link.git
+cd air-link
+go build -o airlink ./cmd/airlink
+```
 
 ### 简要步骤
 
 1. 启动 AirLink（自动打开浏览器）
-2. 点击"创建房间"，获得 6 位 PIN 码
-3. 其他设备输入 PIN 码加入
+2. 点击"创建房间"，获得 6 位 PIN 码和二维码
+3. 其他设备：
+   - 扫描二维码自动加入，或
+   - 复制链接发送给对方，或
+   - 手动输入 PIN 码加入
 4. 开始传输文件和消息
 
 ## 📚 文档
@@ -33,7 +39,6 @@
 - **[快速入门指南](docs/QUICKSTART.md)** - 详细的使用教程
 - **[问题排查](docs/TROUBLESHOOTING.md)** - 常见问题解决方案
 - **[测试指南](docs/TEST_GUIDE.md)** - 如何测试 AirLink
-- **[局域网扫描说明](docs/LAN_SCAN_FAQ.md)** - 局域网扫描功能详解
 - **[更多文档](docs/README.md)** - 完整文档索引
 
 ## 浏览器兼容性
@@ -136,13 +141,12 @@ Flags:
 ### 环境要求
 
 - Go 1.21+
-- Node.js（可选，仅用于前端开发）
 
 ### 构建
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/air-link.git
+git clone https://github.com/clueing/air-link.git
 cd air-link
 
 # 安装依赖
@@ -170,10 +174,11 @@ air-link/
 │   ├── config/           # 配置管理
 │   ├── server/           # HTTP/WebSocket 服务
 │   ├── signaling/        # 信令逻辑
-│   ├── discovery/        # 局域网发现
+│   ├── discovery/        # mDNS 发现
 │   └── security/         # 安全模块
 ├── internal/server/web/  # 前端资源
 │   ├── index.html
+│   ├── qrcode.min.js     # 二维码生成库
 │   ├── webrtc.js
 │   ├── signaling.js
 │   ├── file-transfer.js
@@ -187,10 +192,11 @@ air-link/
 ## 技术架构
 
 - **后端**：Go + gorilla/websocket + hashicorp/mdns
-- **前端**：原生 JavaScript + WebRTC API
+- **前端**：原生 JavaScript + WebRTC API + QRCode.js
 - **信令**：WebSocket（纯 JSON）
 - **传输**：WebRTC DataChannel（P2P）
-- **发现**：mDNS + HTTP 探测
+- **PIN 房间**：内存存储，5 分钟过期
+- **二维码**：自动生成带 PIN 的加入链接
 
 详细技术文档请参阅 [CLAUDE.md](CLAUDE.md)。
 
@@ -206,14 +212,20 @@ air-link/
 ### 无法连接到其他设备？
 
 1. 检查防火墙设置，确保允许端口 8080
-2. 确认两台设备在同一局域网内，或使用正确的 PIN
+2. 确保双方都输入了正确的 PIN 码
 3. 如果在复杂 NAT 环境下，可能需要配置 TURN 服务器
 
 ### 文件传输速度慢？
 
-- 局域网内传输速度取决于网络带宽
+- 局域网内传输速度取决于网络带宽（WebRTC 自动优化为局域网直连）
 - 公网传输速度取决于上传带宽（对方的下载速度）
 - 尝试关闭其他占用带宽的程序
+
+### 移动端如何加入？
+
+- **推荐方式**：扫描二维码自动加入
+- 或复制链接发送给对方（微信、短信等）
+- 或手动输入 6 位 PIN 码
 
 ### 浏览器兼容性？
 
@@ -233,5 +245,5 @@ air-link/
 
 ## 联系方式
 
-- GitHub: https://github.com/yourusername/air-link
-- Issues: https://github.com/yourusername/air-link/issues
+- GitHub: https://github.com/clueing/air-link
+- Issues: https://github.com/clueing/air-link/issues
