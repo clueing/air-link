@@ -15,55 +15,48 @@
 
 ### 下载
 
-前往 [Releases](https://github.com/yourusername/air-link/releases) 页面下载对应平台的可执行文件：
+前往 [Releases](https://github.com/yourusername/air-link/releases) 页面下载对应平台的可执行文件。
 
-- Windows: `airlink-windows-amd64.exe`
-- macOS (Intel): `airlink-darwin-amd64`
-- macOS (Apple Silicon): `airlink-darwin-arm64`
-- Linux: `airlink-linux-amd64`
+### 5 分钟快速入门
 
-### 运行
+详细的快速入门指南请查看：**[📖 快速入门指南](docs/QUICKSTART.md)**
 
-#### Windows
+### 简要步骤
 
-双击运行 `airlink-windows-amd64.exe`，或在命令行中：
+1. 启动 AirLink（自动打开浏览器）
+2. 点击"创建房间"，获得 6 位 PIN 码
+3. 其他设备输入 PIN 码加入
+4. 开始传输文件和消息
 
-```powershell
-.\airlink-windows-amd64.exe
-```
+## 📚 文档
 
-#### macOS / Linux
+- **[快速入门指南](docs/QUICKSTART.md)** - 详细的使用教程
+- **[问题排查](docs/TROUBLESHOOTING.md)** - 常见问题解决方案
+- **[测试指南](docs/TEST_GUIDE.md)** - 如何测试 AirLink
+- **[局域网扫描说明](docs/LAN_SCAN_FAQ.md)** - 局域网扫描功能详解
+- **[更多文档](docs/README.md)** - 完整文档索引
 
-添加执行权限并运行：
+## 浏览器兼容性
 
-```bash
-chmod +x airlink-darwin-amd64
-./airlink-darwin-amd64
-```
+### ✅ 推荐浏览器
 
-默认情况下，AirLink 会：
-1. 启动 HTTP 服务器（端口 8080）
-2. 自动打开浏览器访问 `http://localhost:8080`
+- Chrome 56+
+- Firefox 52+
+- Safari 11+
+- Edge 79+
 
-### 使用方法
+### ⚠️ 已知限制
 
-#### 创建房间
+- **Via 浏览器**（iOS WebView）- 部分功能受限，详见 [Via 浏览器兼容性](docs/VIA_BROWSER_ISSUE.md)
+- 其他 WebView 浏览器可能存在类似问题
 
-1. 打开 AirLink
-2. 点击"创建房间"
-3. 将生成的 6 位 PIN 码分享给要连接的设备
+### 🔒 隐私说明
 
-#### 加入房间
-
-1. 打开 AirLink
-2. 输入 6 位 PIN 码
-3. 点击"加入"
-
-#### 发送文件
-
-1. 连接到房间后
-2. 点击附件图标选择文件
-3. 文件将自动通过 P2P 传输给房间内所有设备
+AirLink 使用 P2P 技术，连接时会交换 IP 地址：
+- 只与房间内设备共享
+- 服务器不存储 IP 地址
+- 建议只与信任的人共享 PIN 码
+- 如需隐藏 IP，请使用 VPN
 
 ## 配置
 
