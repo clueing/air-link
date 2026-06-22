@@ -55,9 +55,8 @@ make build
 ## 📚 文档
 
 - **[快速入门指南](docs/QUICKSTART.md)** - 详细的使用教程
-- **[问题排查](docs/TROUBLESHOOTING.md)** - 常见问题解决方案
-- **[测试指南](docs/TEST_GUIDE.md)** - 如何测试 AirLink
-- **[更多文档](docs/README.md)** - 完整文档索引
+- **[Via 浏览器兼容性](docs/VIA_BROWSER_ISSUE.md)** - Via 浏览器已知问题
+- **[技术文档](CLAUDE.md)** - 完整技术设计文档
 
 ## 浏览器兼容性
 
