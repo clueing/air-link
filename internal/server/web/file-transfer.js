@@ -23,7 +23,7 @@ class FileTransferManager {
   }
 
   // 发送文件
-  async sendFile(file, toDeviceId) {
+  async sendFile(file, toDeviceId, senderName) {
     const fileId = this.generateFileId();
     const totalChunks = Math.ceil(file.size / this.chunkSize);
 
@@ -31,6 +31,7 @@ class FileTransferManager {
       fileId,
       file,
       toDeviceId,
+      senderName, // 保存发送者名称
       totalChunks,
       sentChunks: new Set(),
       ackedChunks: new Set(),
@@ -68,11 +69,26 @@ class FileTransferManager {
     sendState.status = 'sending';
     sendState.startTime = Date.now();
 
-    // 发送文件元数据
-    await this.sendFileMetadata(sendState);
+    try {
+      // 发送文件元数据
+      await this.sendFileMetadata(sendState);
 
-    // 开始发送分片
-    await this.sendChunks(sendState);
+      // 开始发送分片
+      await this.sendChunks(sendState);
+    } catch (error) {
+      console.error('文件发送失败:', error);
+
+      // 触发错误回调
+      if (this.onErrorCallback) {
+        this.onErrorCallback(sendState.fileId, error);
+      }
+
+      // 从活动列表移除
+      this.activeSends.delete(sendState.fileId);
+
+      // 继续处理队列
+      this.processSendQueue();
+    }
   }
 
   // 发送文件元数据
@@ -83,10 +99,30 @@ class FileTransferManager {
       name: sendState.file.name,
       size: sendState.file.size,
       mime_type: sendState.file.type,
-      total_chunks: sendState.totalChunks
+      total_chunks: sendState.totalChunks,
+      sender_name: sendState.senderName || '未知' // 添加发送者名称
     };
 
+    // 等待 DataChannel 就绪
+    await this.waitForDataChannel(sendState.toDeviceId);
+
     this.webrtc.sendMessage(sendState.toDeviceId, metadata);
+  }
+
+  // 等待 DataChannel 就绪
+  async waitForDataChannel(deviceId, timeout = 10000) {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      const channel = this.webrtc.dataChannels.get(deviceId);
+      if (channel && channel.readyState === 'open') {
+        return true;
+      }
+      // 等待 100ms 后重试
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    throw new Error(`DataChannel 超时未就绪: ${deviceId}`);
   }
 
   // 发送分片
@@ -235,6 +271,7 @@ class FileTransferManager {
       size: metadata.size,
       mimeType: metadata.mime_type,
       totalChunks: metadata.total_chunks,
+      senderName: metadata.sender_name || '未知', // 保存发送者名称
       chunks: new Map(),
       receivedChunks: new Set(),
       status: 'receiving',
@@ -248,7 +285,8 @@ class FileTransferManager {
     if (this.onProgressCallback) {
       this.onProgressCallback(receiveState.fileId, 0, 'receive', {
         name: receiveState.name,
-        size: receiveState.size
+        size: receiveState.size,
+        senderName: receiveState.senderName // 传递发送者名称
       });
     }
   }

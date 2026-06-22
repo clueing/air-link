@@ -1566,7 +1566,7 @@
         if (metadata) {
           // 新文件开始接收
           if (direction === 'receive') {
-            addFileCard(metadata.name, metadata.size, '对方', false, null, fileId);
+            addFileCard(metadata.name, metadata.size, metadata.senderName || '对方', false, null, fileId);
           }
         }
         updateFileProgress(fileId, progress);
@@ -1839,7 +1839,7 @@
     for (const file of files) {
       for (const device of deviceList) {
         try {
-          const fileId = await fileTransfer.sendFile(file, device.id);
+          const fileId = await fileTransfer.sendFile(file, device.id, userName);
           // 只显示一次文件卡片（给第一个设备）
           if (device === deviceList[0]) {
             addFileCard(file.name, file.size, userName, true, file, fileId);
