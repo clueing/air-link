@@ -1939,18 +1939,40 @@
     if (!currentPin) return;
 
     try {
-      await navigator.clipboard.writeText(currentPin);
-      showToast('PIN 已复制到剪贴板');
+      // 方法 1：使用 Clipboard API（推荐）
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(currentPin);
+        showToast('PIN 已复制到剪贴板');
+      } else {
+        // 方法 2：使用传统方法（降级）
+        const textarea = document.createElement('textarea');
+        textarea.value = currentPin;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        if (successful) {
+          showToast('PIN 已复制到剪贴板');
+        } else {
+          showToast('复制失败，PIN: ' + currentPin);
+        }
+      }
 
       // 动画反馈
       const btn = $('btnCopyPin');
-      btn.style.transform = 'scale(0.9)';
-      setTimeout(() => {
-        btn.style.transform = 'scale(1)';
-      }, 150);
+      if (btn) {
+        btn.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          btn.style.transform = 'scale(1)';
+        }, 150);
+      }
     } catch (error) {
       console.error('复制失败:', error);
-      showToast('复制失败，请手动复制');
+      showToast('复制失败，PIN: ' + currentPin);
     }
   };
 
