@@ -35,12 +35,6 @@ security:
     window_time: 60              # 时间窗口（秒）
     lockout_time: 600            # 锁定时间（秒）
 
-# 局域网发现
-discovery:
-  mdns_enabled: true             # 启用 mDNS
-  http_probe_enabled: true       # 启用 HTTP 探测
-  service_name: "_airlink._tcp"  # mDNS 服务名称
-
 # 日志配置
 logging:
   level: "info"                  # debug, info, warn, error

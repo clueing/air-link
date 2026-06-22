@@ -106,12 +106,6 @@ security:
     window_time: 60
     lockout_time: 600
 
-# 局域网发现
-discovery:
-  mdns_enabled: true
-  http_probe_enabled: true
-  service_name: "_airlink._tcp"
-
 # 日志配置
 logging:
   level: "info"
@@ -186,7 +180,6 @@ air-link/
 │   ├── config/           # 配置管理
 │   ├── server/           # HTTP/WebSocket 服务
 │   ├── signaling/        # 信令逻辑
-│   ├── discovery/        # mDNS 发现
 │   └── security/         # 安全模块
 ├── internal/server/web/  # 前端资源
 │   ├── index.html
@@ -203,7 +196,7 @@ air-link/
 
 ## 技术架构
 
-- **后端**：Go + gorilla/websocket + hashicorp/mdns
+- **后端**：Go + gorilla/websocket
 - **前端**：原生 JavaScript + WebRTC API + QRCode.js
 - **信令**：WebSocket（纯 JSON）
 - **传输**：WebRTC DataChannel（P2P）

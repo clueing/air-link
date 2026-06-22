@@ -8,12 +8,11 @@ import (
 
 // Config 应用配置
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	WebRTC    WebRTCConfig    `mapstructure:"webrtc"`
-	Room      RoomConfig      `mapstructure:"room"`
-	Security  SecurityConfig  `mapstructure:"security"`
-	Discovery DiscoveryConfig `mapstructure:"discovery"`
-	Logging   LoggingConfig   `mapstructure:"logging"`
+	Server   ServerConfig   `mapstructure:"server"`
+	WebRTC   WebRTCConfig   `mapstructure:"webrtc"`
+	Room     RoomConfig     `mapstructure:"room"`
+	Security SecurityConfig `mapstructure:"security"`
+	Logging  LoggingConfig  `mapstructure:"logging"`
 }
 
 // ServerConfig 服务器配置
@@ -52,13 +51,6 @@ type RateLimitConfig struct {
 	MaxAttempts  int `mapstructure:"max_attempts"`
 	WindowTime   int `mapstructure:"window_time"`   // 秒
 	LockoutTime  int `mapstructure:"lockout_time"`  // 秒
-}
-
-// DiscoveryConfig 局域网发现配置
-type DiscoveryConfig struct {
-	MDNSEnabled      bool   `mapstructure:"mdns_enabled"`
-	HTTPProbeEnabled bool   `mapstructure:"http_probe_enabled"`
-	ServiceName      string `mapstructure:"service_name"`
 }
 
 // LoggingConfig 日志配置
@@ -130,11 +122,6 @@ func setDefaults() {
 	viper.SetDefault("security.rate_limit.max_attempts", 5)
 	viper.SetDefault("security.rate_limit.window_time", 60)
 	viper.SetDefault("security.rate_limit.lockout_time", 600)
-
-	// 发现
-	viper.SetDefault("discovery.mdns_enabled", true)
-	viper.SetDefault("discovery.http_probe_enabled", true)
-	viper.SetDefault("discovery.service_name", "_airlink._tcp")
 
 	// 日志
 	viper.SetDefault("logging.level", "info")
