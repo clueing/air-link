@@ -55,7 +55,6 @@ make build
 ## 📚 文档
 
 - **[快速入门指南](docs/QUICKSTART.md)** - 详细的使用教程
-- **[Via 浏览器兼容性](docs/VIA_BROWSER_ISSUE.md)** - Via 浏览器已知问题
 - **[技术文档](CLAUDE.md)** - 完整技术设计文档
 
 ## 浏览器兼容性
@@ -67,10 +66,6 @@ make build
 - Safari 11+
 - Edge 79+
 
-### ⚠️ 已知限制
-
-- **Via 浏览器**（iOS WebView）- 部分功能受限，详见 [Via 浏览器兼容性](docs/VIA_BROWSER_ISSUE.md)
-- 其他 WebView 浏览器可能存在类似问题
 
 ### 🔒 隐私说明
 
