@@ -105,8 +105,8 @@ class AirLinkApp {
         });
       }
 
-      // 向所有现有设备发起连接
-      this.connectToAllDevices();
+      // 作为加入方，不主动发起连接
+      // 现有设备会收到 device_update 并主动连接我们
 
       if (this.onRoomJoinedCallback) {
         this.onRoomJoinedCallback(this.currentRoom, Array.from(this.devices.values()));
