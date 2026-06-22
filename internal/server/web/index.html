@@ -1056,11 +1056,21 @@
 
 </div>
 
+<!-- JavaScript 模块 -->
+<script src="signaling.js"></script>
+<script src="webrtc.js"></script>
+<script src="file-transfer.js"></script>
+<script src="app-core.js"></script>
+
 <script>
 (function () {
   'use strict';
 
   const $ = id => document.getElementById(id);
+
+  // 应用实例
+  let app = null;
+  let fileTransfer = null;
 
   let state = 'lobby';
   let currentPin = '';
@@ -1098,7 +1108,9 @@
     userName = name;
     localStorage.setItem(NAME_KEY, name);
     $('nameDisplay').textContent = name;
-    // Update devices array self entry
+    if (app) {
+      app.updateDeviceName(name);
+    }
     devices = devices.map(d => d.you ? { ...d, name: name } : d);
     updateDeviceList();
     renderDevicePopover();
@@ -1203,6 +1215,9 @@
     if (getThemeMode() === 'auto') applyTheme('auto');
   });
 
+  // ── 初始化应用 ──
+  initApp();
+
   // ── Device Popover ──
   const devicePopover = document.getElementById('devicePopover');
   const devicePopoverList = document.getElementById('devicePopoverList');
@@ -1236,35 +1251,7 @@
   let lanDevices = [];
   let scanning = false;
 
-  const fakeLanDevices = [
-    { name: 'DESKTOP-A1B2C3', ip: '192.168.1.105' },
-    { name: 'iPhone-小明', ip: '192.168.1.42' },
-    { name: 'MacBook-Pro', ip: '192.168.1.88' },
-    { name: 'Living-Room-TV', ip: '192.168.1.200' },
-  ];
-
-  function renderLanDevices() {
-    const container = document.getElementById('lanDevices');
-    const empty = document.getElementById('lanEmpty');
-    if (lanDevices.length === 0) {
-      container.innerHTML = '';
-      container.appendChild(empty);
-      empty.style.display = '';
-      return;
-    }
-    container.innerHTML = lanDevices.map(d => `
-      <div class="lan-device-item">
-        <span class="lan-device-dot"></span>
-        <div class="lan-device-info">
-          <div class="lan-device-name">${escHtml(d.name)}</div>
-          <div class="lan-device-ip">${escHtml(d.ip)}</div>
-        </div>
-        <button class="lan-device-connect" onclick="connectLanDevice('${escHtml(d.name)}')">连接</button>
-      </div>
-    `).join('');
-  }
-
-  window.scanLan = function() {
+  window.scanLan = async function() {
     if (scanning) return;
     scanning = true;
     const btn = document.getElementById('lanScanBtn');
@@ -1275,56 +1262,26 @@
     lanDevices = [];
     renderLanDevices();
 
-    let found = 0;
-    const interval = setInterval(() => {
-      if (found < fakeLanDevices.length && Math.random() > 0.3) {
-        lanDevices.push(fakeLanDevices[found]);
-        renderLanDevices();
-        found++;
-      }
-      if (found >= fakeLanDevices.length) {
-        clearInterval(interval);
-        scanning = false;
-        btn.classList.remove('scanning');
-        btn.disabled = false;
-        txt.textContent = '重新扫描';
-        showToast('发现 ' + lanDevices.length + ' 台局域网设备');
-      }
-    }, 600 + Math.random() * 800);
-
-    setTimeout(() => {
-      if (scanning) {
-        clearInterval(interval);
-        scanning = false;
-        btn.classList.remove('scanning');
-        btn.disabled = false;
-        txt.textContent = lanDevices.length > 0 ? '重新扫描' : '扫描';
-        if (lanDevices.length > 0) showToast('发现 ' + lanDevices.length + ' 台局域网设备');
-        else showToast('未发现局域网设备');
-      }
-    }, 6000);
+    try {
+      const response = await fetch('/api/scan');
+      const data = await response.json();
+      lanDevices = data.devices || [];
+      renderLanDevices();
+      showToast(`发现 ${lanDevices.length} 台局域网设备`);
+    } catch (error) {
+      console.error('扫描失败:', error);
+      showToast('扫描失败');
+    } finally {
+      scanning = false;
+      btn.classList.remove('scanning');
+      btn.disabled = false;
+      txt.textContent = lanDevices.length > 0 ? '重新扫描' : '扫描';
+    }
   };
 
-  window.connectLanDevice = function(name) {
-    showToast('正在连接 ' + name + '…');
-    setTimeout(() => {
-      currentPin = genPin();
-      isHost = true;
-      devices = [
-        { name: userName, you: true },
-        { name: name, you: false }
-      ];
-      $('waitingPin').textContent = currentPin;
-      updateDeviceList();
-      switchView('waiting');
-      headerPin.textContent = currentPin;
-      setTimeout(() => {
-        if (state !== 'waiting') return;
-        addDevice(name);
-        showToast(name + ' 已加入');
-        setTimeout(() => enterRoom(), 800);
-      }, 1500);
-    }, 800);
+  window.connectLanDevice = function(deviceId) {
+    // 实现局域网设备直连逻辑
+    showToast('局域网直连功能开发中');
   };
 
   const viewLobby = $('viewLobby');
@@ -1380,42 +1337,130 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // ── Create Room ──
-  window.createRoom = function () {
-    currentPin = genPin();
-    isHost = true;
-    devices = [{ name: userName, you: true }];
-    $('waitingPin').textContent = currentPin;
-    updateDeviceList();
-    switchView('waiting');
+  // ── 初始化应用 ──
+  async function initApp() {
+    try {
+      app = new AirLinkApp();
+      const deviceInfo = await app.init();
 
-    setTimeout(() => {
-      if (state !== 'waiting') return;
-      addDevice('MacBook Pro');
-      showToast('新设备已加入');
-      setTimeout(() => enterRoom(), 800);
-    }, 3000 + Math.random() * 2000);
+      userName = deviceInfo.name;
+      $('nameDisplay').textContent = userName;
+
+      // 设置回调
+      app.onRoomCreated((room) => {
+        currentPin = room.pin;
+        isHost = true;
+        devices = [{ name: userName, you: true }];
+        $('waitingPin').textContent = currentPin;
+        updateDeviceList();
+        switchView('waiting');
+        showToast('房间已创建');
+      });
+
+      app.onRoomJoined((room, deviceList) => {
+        currentPin = room.pin;
+        isHost = false;
+        devices = deviceList.map(d => ({
+          name: d.name,
+          you: d.isYou
+        }));
+        deviceNum.textContent = devices.length;
+        renderDevicePopover();
+        switchView('room');
+        headerPin.textContent = currentPin;
+        addSystemMsg('已连接到房间 ' + currentPin);
+      });
+
+      app.onDeviceJoined((device) => {
+        devices.push({ name: device.device_name, you: false });
+        updateDeviceList();
+        renderDevicePopover();
+        deviceNum.textContent = devices.length;
+        addSystemMsg(device.device_name + ' 加入了房间');
+
+        // 如果在等待界面，切换到聊天室
+        if (state === 'waiting') {
+          setTimeout(() => {
+            headerPin.textContent = currentPin;
+            deviceNum.textContent = devices.length;
+            switchView('room');
+          }, 500);
+        }
+      });
+
+      app.onDeviceLeft((device) => {
+        devices = devices.filter(d => d.name !== device.device_name);
+        updateDeviceList();
+        renderDevicePopover();
+        deviceNum.textContent = devices.length;
+        addSystemMsg(device.device_name + ' 离开了房间');
+      });
+
+      app.onMessageReceived((deviceId, message) => {
+        if (message.type === 'text') {
+          addOtherMsg(message.content, message.sender_name);
+        } else if (message.type === 'file_meta') {
+          fileTransfer.handleFileMetadata(deviceId, message);
+        }
+      });
+
+      app.onError((error) => {
+        showToast('错误: ' + error.message);
+      });
+
+      // 初始化文件传输
+      fileTransfer = new FileTransferManager(app.webrtc);
+
+      fileTransfer.onProgress((fileId, progress, direction, metadata) => {
+        // 更新进度条
+        if (metadata) {
+          // 新文件开始接收
+          if (direction === 'receive') {
+            addFileCard(metadata.name, metadata.size, '对方', false, null, fileId);
+          }
+        }
+        updateFileProgress(fileId, progress);
+      });
+
+      fileTransfer.onComplete((fileId, direction, result) => {
+        if (direction === 'receive' && result) {
+          // 接收完成，提供下载
+          completeFileReceive(fileId, result);
+        }
+      });
+
+      fileTransfer.onError((fileId, error) => {
+        showToast('文件传输失败');
+      });
+
+      console.log('AirLink 应用初始化完成');
+    } catch (error) {
+      console.error('初始化失败:', error);
+      showToast('初始化失败: ' + error.message);
+    }
+  }
+
+  // ── Create Room ──
+  window.createRoom = async function () {
+    if (!app) return;
+    try {
+      await app.createRoom();
+    } catch (error) {
+      showToast('创建房间失败');
+    }
   };
 
   // ── Join Room ──
-  window.joinRoom = function () {
+  window.joinRoom = async function () {
     const pin = $('joinPinInput').value.trim();
     if (pin.length !== 6) return;
-    currentPin = pin;
-    isHost = false;
-    devices = [
-      { name: userName, you: true },
-      { name: 'Windows PC', you: false }
-    ];
-    deviceNum.textContent = devices.length;
-    renderDevicePopover();
-    switchView('room');
-    headerPin.textContent = currentPin;
-    addSystemMsg('已连接到房间 ' + currentPin);
-    addSystemMsg('Windows PC 加入了房间');
-    setTimeout(() => {
-      addOtherMsg('你好！文件准备好了，马上发给你。', 'Windows PC');
-    }, 1200);
+    if (!app) return;
+
+    try {
+      await app.joinRoom(pin);
+    } catch (error) {
+      showToast('加入房间失败');
+    }
   };
 
   function enterRoom() {
@@ -1485,7 +1530,7 @@
     scrollToBottom();
   }
 
-  function addFileCard(name, size, sender, isSelf, fileObj) {
+  function addFileCard(name, size, sender, isSelf, fileObj, fileId) {
     const el = document.createElement('div');
     el.className = isSelf ? 'msg self' : 'msg other';
     if (!isSelf) {
@@ -1493,6 +1538,9 @@
     }
     const card = document.createElement('div');
     card.className = 'file-card';
+    if (fileId) {
+      card.dataset.fileId = fileId;
+    }
     const ext = name.split('.').pop().toLowerCase();
     let previewHtml = '';
     if (fileObj) {
@@ -1542,60 +1590,24 @@
     el.appendChild(card);
     messages.appendChild(el);
     scrollToBottom();
-    simulateProgress(card, name, isSelf);
-  }
 
-  function simulateProgress(card, fileName, isSelf) {
-    let pct = 0;
-    const bar = card.querySelector('.file-progress-bar');
-    const sText = card.querySelector('.status-text');
-    const sPct = card.querySelector('.file-status span:last-child');
-    const interval = setInterval(() => {
-      pct += Math.random() * 15 + 5;
-      if (pct >= 100) {
-        pct = 100;
-        clearInterval(interval);
-        bar.style.width = '100%';
-        bar.classList.add('done');
-        sText.textContent = '传输完成';
-        sText.classList.add('done');
-        sPct.textContent = '100%';
-        if (!isSelf) {
-          const status = card.querySelector('.file-status');
-          const dlBtn = document.createElement('button');
-          dlBtn.className = 'btn-download';
-          dlBtn.textContent = '保存';
-          dlBtn.onclick = () => showToast('文件已保存');
-          status.appendChild(dlBtn);
-        }
-      } else {
-        bar.style.width = pct + '%';
-        sPct.textContent = Math.round(pct) + '%';
-      }
-    }, 200 + Math.random() * 300);
+    // 不再模拟进度，真实进度由 fileTransfer 回调更新
   }
 
   // ── Send Message ──
   window.sendMessage = function () {
     const text = msgInput.value.trim();
     if (!text) return;
+    if (!app) return;
+
     addSelfMsg(text);
     msgInput.value = '';
     msgInput.style.height = '42px';
     msgInput.style.overflowY = 'hidden';
     btnSend.disabled = true;
 
-    const replies = [
-      '收到！',
-      '好的，我看一下。',
-      '文件收到了，谢谢！',
-      '马上处理。',
-      '没问题，稍等。',
-      '已确认，继续吧。'
-    ];
-    setTimeout(() => {
-      addOtherMsg(replies[Math.floor(Math.random() * replies.length)], 'MacBook Pro');
-    }, 800 + Math.random() * 1500);
+    // 通过 WebRTC 发送
+    app.sendTextMessage(text);
   };
 
   window.onMsgKey = function (e) {
@@ -1646,25 +1658,70 @@
   };
 
   // ── File Transfer ──
-  window.onFileSelect = function (e) {
+  window.onFileSelect = async function (e) {
+    if (!app || !fileTransfer) return;
+
     const files = Array.from(e.target.files);
-    files.forEach(f => {
-      addFileCard(f.name, f.size, userName, true, f);
-      setTimeout(() => {
-        const peerFiles = [
-          { name: '回复文档.pdf', size: 245000 },
-          { name: '截图.png', size: 1820000 },
-          { name: '备份.zip', size: 15600000 },
-          { name: '设计稿.sketch', size: 8900000 },
-          { name: '会议录音.mp3', size: 4500000 },
-          { name: '代码.tsx', size: 12000 },
-        ];
-        const pick = peerFiles[Math.floor(Math.random() * peerFiles.length)];
-        addFileCard(pick.name, pick.size, 'MacBook Pro', false, null);
-      }, 2000 + Math.random() * 3000);
-    });
+    const devices = app.getDevices().filter(d => !d.isYou);
+
+    if (devices.length === 0) {
+      showToast('没有可发送的设备');
+      return;
+    }
+
+    // 发送到第一个设备（简化处理，实际应该选择目标设备）
+    const targetDevice = devices[0];
+
+    for (const file of files) {
+      const fileId = await fileTransfer.sendFile(file, targetDevice.id);
+      addFileCard(file.name, file.size, userName, true, file, fileId);
+    }
+
     e.target.value = '';
   };
+
+  // 更新文件进度
+  function updateFileProgress(fileId, progress) {
+    const cards = document.querySelectorAll('.file-card');
+    for (const card of cards) {
+      if (card.dataset.fileId === fileId) {
+        const bar = card.querySelector('.file-progress-bar');
+        const sPct = card.querySelector('.file-status span:last-child');
+        if (bar) bar.style.width = progress + '%';
+        if (sPct) sPct.textContent = Math.round(progress) + '%';
+
+        if (progress >= 100) {
+          const sText = card.querySelector('.status-text');
+          if (bar) bar.classList.add('done');
+          if (sText) {
+            sText.textContent = '传输完成';
+            sText.classList.add('done');
+          }
+        }
+      }
+    }
+  }
+
+  // 完成文件接收
+  function completeFileReceive(fileId, result) {
+    const cards = document.querySelectorAll('.file-card');
+    for (const card of cards) {
+      if (card.dataset.fileId === fileId) {
+        const status = card.querySelector('.file-status');
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'btn-download';
+        dlBtn.textContent = '保存';
+        dlBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(result.blob);
+          a.download = result.name;
+          a.click();
+          showToast('文件已保存');
+        };
+        status.appendChild(dlBtn);
+      }
+    }
+  }
 
   // ── Join Input ──
   window.onPinInput = function () {
@@ -1675,6 +1732,9 @@
 
   // ── Leave Room ──
   window.leaveRoom = function () {
+    if (app) {
+      app.leaveRoom();
+    }
     currentPin = '';
     devices = [];
     $('joinPinInput').value = '';
@@ -1682,6 +1742,20 @@
     messages.innerHTML = '';
     switchView('lobby');
   };
+
+  // ── 更新设备名称 ──
+  function setUserName(name) {
+    userName = name;
+    localStorage.setItem(NAME_KEY, name);
+    $('nameDisplay').textContent = name;
+    if (app) {
+      app.updateDeviceName(name);
+    }
+    devices = devices.map(d => d.you ? { ...d, name: name } : d);
+    updateDeviceList();
+    renderDevicePopover();
+    if (deviceNum) deviceNum.textContent = devices.length;
+  }
 
 })();
 </script>
