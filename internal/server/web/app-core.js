@@ -164,16 +164,23 @@ class AirLinkApp {
               // 我是 polite 方，回滚自己的 offer，接受对方的 offer
               console.log('我是 polite 方，回滚本地 offer');
               await pc.setLocalDescription({ type: 'rollback' });
+              await pc.setRemoteDescription(new RTCSessionDescription(signal));
+
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+
+              this.signaling.sendSignal(fromDeviceId, {
+                type: 'answer',
+                sdp: answer.sdp
+              });
+              return; // 处理完毕，直接返回
             }
           }
 
-          // 创建或获取连接
+          // 正常处理 offer（没有冲突）
           pc = await this.webrtc.createConnection(fromDeviceId, false);
-
-          // 设置远程描述
           await pc.setRemoteDescription(new RTCSessionDescription(signal));
 
-          // 创建并发送 answer
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
@@ -195,7 +202,7 @@ class AirLinkApp {
           if (pc.signalingState === 'have-local-offer') {
             await pc.setRemoteDescription(new RTCSessionDescription(signal));
           } else {
-            console.warn(`收到 answer 但状态不对: ${pc.signalingState}，忽略`);
+            console.log(`收到 answer 但状态是 ${pc.signalingState}，忽略`);
           }
 
         } else if (signal.type === 'ice') {
