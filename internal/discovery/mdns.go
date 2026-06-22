@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/hashicorp/mdns"
@@ -138,10 +139,10 @@ func Scan(serviceName string, timeout time.Duration, logger *logrus.Logger) ([]*
 
 			// 获取 IP
 			ip := ""
-			if len(entry.AddrV4) > 0 {
-				ip = entry.AddrV4[0].String()
-			} else if len(entry.AddrV6) > 0 {
-				ip = entry.AddrV6[0].String()
+			if entry.AddrV4 != nil {
+				ip = entry.AddrV4.String()
+			} else if entry.AddrV6 != nil {
+				ip = entry.AddrV6.String()
 			}
 
 			if deviceID != "" && ip != "" {
@@ -162,7 +163,7 @@ func Scan(serviceName string, timeout time.Duration, logger *logrus.Logger) ([]*
 
 // getHostname 获取主机名
 func getHostname() (string, error) {
-	hostname, err := mdns.GetHostname()
+	hostname, err := os.Hostname()
 	if err != nil {
 		return "airlink-host", nil // 使用默认值
 	}
