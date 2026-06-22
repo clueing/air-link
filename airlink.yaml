@@ -9,8 +9,15 @@ server:
 # WebRTC 配置
 webrtc:
   stun_servers:
+    # Google STUN（全球可用）
     - "stun:stun.l.google.com:19302"
     - "stun:stun1.l.google.com:19302"
+    # 国内可用的 STUN 服务器
+    - "stun:stun.miwifi.com:3478"           # 小米 STUN
+    - "stun:stun.chat.bilibili.com:3478"    # Bilibili STUN
+    - "stun:stun.hitv.com:3478"             # 芒果TV STUN
+    - "stun:stun.voipbuster.com:3478"       # VoipBuster（欧洲，国内可用）
+    - "stun:stun.sipnet.net:3478"           # SipNet（俄罗斯，国内可用）
   turn_servers: []               # 可选，用户自行配置
     # - url: "turn:your-turn-server.com:3478"
     #   username: "user"

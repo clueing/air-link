@@ -114,6 +114,11 @@ func setDefaults() {
 	viper.SetDefault("webrtc.stun_servers", []string{
 		"stun:stun.l.google.com:19302",
 		"stun:stun1.l.google.com:19302",
+		"stun:stun.miwifi.com:3478",
+		"stun:stun.chat.bilibili.com:3478",
+		"stun:stun.hitv.com:3478",
+		"stun:stun.voipbuster.com:3478",
+		"stun:stun.sipnet.net:3478",
 	})
 	viper.SetDefault("webrtc.turn_servers", []TURNServer{})
 
