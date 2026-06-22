@@ -21,7 +21,25 @@
 ```bash
 git clone https://github.com/clueing/air-link.git
 cd air-link
+
+# Windows (PowerShell)
+go build -o airlink.exe ./cmd/airlink
+
+# Linux/macOS
 go build -o airlink ./cmd/airlink
+
+# 或使用 Makefile（需要安装 make）
+make build
+```
+
+### 运行
+
+```bash
+# Windows
+./airlink.exe
+
+# Linux/macOS
+./airlink
 ```
 
 ### 简要步骤
