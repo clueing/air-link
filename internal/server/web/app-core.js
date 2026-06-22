@@ -149,13 +149,27 @@ class AirLinkApp {
       try {
         if (signal.type === 'offer') {
           // 收到 offer，创建连接并发送 answer
-          await this.webrtc.createConnection(fromDeviceId, false);
+          const pc = await this.webrtc.createConnection(fromDeviceId, false);
+
+          // 检查连接状态，避免在错误状态下设置 remote description
+          if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
+            console.warn(`收到 offer 但状态不对: ${pc.signalingState}，忽略`);
+            return;
+          }
+
           const answer = await this.webrtc.createAnswer(fromDeviceId, signal);
           this.signaling.sendSignal(fromDeviceId, answer);
 
         } else if (signal.type === 'answer') {
           // 收到 answer
-          await this.webrtc.handleAnswer(fromDeviceId, signal);
+          const pc = this.webrtc.connections.get(fromDeviceId);
+
+          // 只有在 have-local-offer 状态下才能设置 remote answer
+          if (pc && pc.signalingState === 'have-local-offer') {
+            await this.webrtc.handleAnswer(fromDeviceId, signal);
+          } else {
+            console.warn(`收到 answer 但状态不对: ${pc ? pc.signalingState : 'no-connection'}，忽略`);
+          }
 
         } else if (signal.type === 'ice') {
           // 收到 ICE 候选

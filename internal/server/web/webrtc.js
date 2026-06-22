@@ -23,9 +23,22 @@ class WebRTCManager {
 
   // 创建 P2P 连接
   async createConnection(deviceId, isInitiator) {
+    // 如果连接已存在，检查是否需要替换
     if (this.connections.has(deviceId)) {
-      console.warn(`连接已存在: ${deviceId}`);
-      return this.connections.get(deviceId);
+      const existingPc = this.connections.get(deviceId);
+      const existingState = existingPc.signalingState;
+
+      // 如果现有连接处于稳定状态且不是发起方，返回现有连接
+      if (existingState === 'stable' || existingState === 'have-local-offer') {
+        console.log(`连接已存在且状态为 ${existingState}: ${deviceId}`);
+        return existingPc;
+      }
+
+      // 如果出现竞态，关闭旧连接
+      console.warn(`检测到竞态条件，关闭旧连接: ${deviceId}`);
+      existingPc.close();
+      this.connections.delete(deviceId);
+      this.dataChannels.delete(deviceId);
     }
 
     const config = {
