@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>AirLink — P2P 文件传输</title>
+  <title>AirLink — 文件传输</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
   <link rel="apple-touch-icon" href="/logo.png" />
@@ -208,128 +208,6 @@
       font-weight: 500;
     }
 
-    /* ── LAN Scan ── */
-    .lan-section {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid var(--line);
-    }
-    .lan-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .lan-title {
-      font-size: 12px;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 600;
-    }
-    .lan-scan-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border: 1px solid var(--accent-border);
-      padding: 4px 12px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-family: var(--font);
-      font-weight: 500;
-      transition: all 0.16s;
-    }
-    .lan-scan-btn:hover {
-      background: rgba(62, 99, 221, 0.12);
-      border-color: rgba(62, 99, 221, 0.28);
-    }
-    .lan-scan-btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    .lan-scan-btn svg {
-      width: 12px;
-      height: 12px;
-    }
-    .lan-scan-btn.scanning svg {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .lan-devices {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .lan-empty {
-      text-align: center;
-      padding: 16px 0;
-      font-size: 13px;
-      color: var(--text-faint);
-    }
-    .lan-empty svg {
-      display: block;
-      margin: 0 auto 8px;
-      width: 24px;
-      height: 24px;
-      color: var(--line-strong);
-    }
-    .lan-device-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
-      background: var(--bg-subtle);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      transition: border-color 0.16s;
-    }
-    .lan-device-item:hover {
-      border-color: var(--line-strong);
-    }
-    .lan-device-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--success);
-      flex-shrink: 0;
-    }
-    .lan-device-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .lan-device-name {
-      font-weight: 500;
-      color: var(--text);
-    }
-    .lan-device-ip {
-      font-size: 11px;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-    }
-    .lan-device-connect {
-      padding: 4px 12px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      border: 1px solid var(--accent-border);
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: all 0.16s;
-      white-space: nowrap;
-    }
-    .lan-device-connect:hover {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
@@ -623,6 +501,17 @@
       letter-spacing: 0.18em;
       color: var(--accent);
       margin: 20px 0 8px;
+    }
+    .waiting-qrcode {
+      margin: 24px auto;
+      padding: 16px;
+      background: white;
+      border-radius: var(--radius-md);
+      width: fit-content;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .waiting-qrcode canvas {
+      display: block;
     }
     .waiting-hint {
       font-size: 13px; color: var(--text-faint);
@@ -1038,7 +927,7 @@
         </div>
         <div class="brand-text">
           <h1>AirLink</h1>
-          <p>轻量、安全、P2P 直传</p>
+          <p>轻量、安全、直传</p>
         </div>
       </div>
       <p class="lobby-sub">无需注册，输入 PIN 即可连接设备<br/>文件与消息端到端直传，不经服务器</p>
@@ -1056,21 +945,6 @@
         <div class="pin-input-group">
           <input class="pin-input" id="joinPinInput" type="text" maxlength="6" placeholder="输入 6 位 PIN" oninput="onPinInput()" onkeydown="if(event.key==='Enter')joinRoom()">
           <button class="btn-join" id="btnJoin" disabled onclick="joinRoom()">加入</button>
-        </div>
-        <div class="lan-section">
-          <div class="lan-header">
-            <span class="lan-title">局域网设备</span>
-            <button class="lan-scan-btn" id="lanScanBtn" onclick="scanLan()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="22 2 22 8 16 8"/></svg>
-              <span id="lanScanText">扫描</span>
-            </button>
-          </div>
-          <div class="lan-devices" id="lanDevices">
-            <div class="lan-empty" id="lanEmpty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              点击扫描局域网内设备
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1096,8 +970,15 @@
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
         </button>
+        <button class="btn-copy-pin" id="btnCopyUrl" onclick="copyUrl()" title="复制链接">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </button>
       </div>
-      <p class="waiting-hint">PIN 有效期 5 分钟，过期后需重新创建</p>
+      <div class="waiting-qrcode" id="waitingQrcode"></div>
+      <p class="waiting-hint">扫描二维码或手动输入 PIN 码加入房间</p>
       <div class="waiting-devices">
         <div class="waiting-devices-title">已连接设备</div>
         <div class="device-list" id="waitingDeviceList">
@@ -1137,6 +1018,7 @@
 </div>
 
 <!-- JavaScript 模块 -->
+<script src="qrcode.min.js"></script>
 <script src="signaling.js"></script>
 <script src="webrtc.js"></script>
 <script src="file-transfer.js"></script>
@@ -1328,70 +1210,6 @@
     }
   });
 
-  // ── LAN Scan ──
-  let lanDevices = [];
-  let scanning = false;
-
-  function renderLanDevices() {
-    const container = document.getElementById('lanDevices');
-    const empty = document.getElementById('lanEmpty');
-
-    if (!container) return;
-
-    if (lanDevices.length === 0) {
-      container.innerHTML = '';
-      if (empty) {
-        container.appendChild(empty);
-        empty.style.display = '';
-      }
-      return;
-    }
-
-    container.innerHTML = lanDevices.map(d => `
-      <div class="lan-device-item">
-        <span class="lan-device-dot"></span>
-        <div class="lan-device-info">
-          <div class="lan-device-name">${escHtml(d.device_name || d.name || '未知设备')}</div>
-          <div class="lan-device-ip">${escHtml(d.ip || '')}</div>
-        </div>
-        <button class="lan-device-connect" onclick="connectLanDevice('${escHtml(d.device_id || d.name || '')}')">连接</button>
-      </div>
-    `).join('');
-  }
-
-  window.scanLan = async function() {
-    if (scanning) return;
-    scanning = true;
-    const btn = document.getElementById('lanScanBtn');
-    const txt = document.getElementById('lanScanText');
-    btn.classList.add('scanning');
-    btn.disabled = true;
-    txt.textContent = '扫描中…';
-    lanDevices = [];
-    renderLanDevices();
-
-    try {
-      const response = await fetch('/api/scan');
-      const data = await response.json();
-      lanDevices = data.devices || [];
-      renderLanDevices();
-      showToast(`发现 ${lanDevices.length} 台局域网设备`);
-    } catch (error) {
-      console.error('扫描失败:', error);
-      showToast('扫描失败');
-    } finally {
-      scanning = false;
-      btn.classList.remove('scanning');
-      btn.disabled = false;
-      txt.textContent = lanDevices.length > 0 ? '重新扫描' : '扫描';
-    }
-  };
-
-  window.connectLanDevice = function(deviceId) {
-    // 实现局域网设备直连逻辑
-    showToast('局域网直连功能开发中');
-  };
-
   const viewLobby = $('viewLobby');
   const viewWaiting = $('viewWaiting');
   const viewRoom = $('viewRoom');
@@ -1496,6 +1314,7 @@
         isHost = true;
         devices = [{ name: userName, you: true }];
         $('waitingPin').textContent = currentPin;
+        generateQRCode(currentPin);
         updateDeviceList();
         switchView('waiting');
         showToast('房间已创建');
@@ -1594,6 +1413,17 @@
       });
 
       console.log('AirLink 应用初始化完成');
+
+      // 检查 URL 参数中是否有 PIN 码，自动加入
+      const urlParams = new URLSearchParams(window.location.search);
+      const pinFromUrl = urlParams.get('pin');
+      if (pinFromUrl && /^\d{6}$/.test(pinFromUrl)) {
+        console.log('检测到 URL 中的 PIN 码，自动加入房间');
+        $('joinPinInput').value = pinFromUrl;
+        setTimeout(() => {
+          joinRoom();
+        }, 500);
+      }
     } catch (error) {
       console.error('初始化失败:', error);
       showToast('初始化失败: ' + error.message);
@@ -1944,6 +1774,28 @@
     $('btnJoin').disabled = v.length !== 6;
   };
 
+  // ── Generate QR Code ──
+  window.generateQRCode = function (pin) {
+    const container = $('waitingQrcode');
+    if (!container) return;
+
+    // 清空容器
+    container.innerHTML = '';
+
+    // 生成加入链接
+    const joinUrl = `${window.location.origin}${window.location.pathname}?pin=${pin}`;
+
+    // 使用 QRCode.js 生成二维码
+    new QRCode(container, {
+      text: joinUrl,
+      width: 200,
+      height: 200,
+      colorDark: '#1E2227',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  };
+
   // ── Copy PIN ──
   window.copyPin = async function () {
     if (!currentPin) return;
@@ -1983,6 +1835,50 @@
     } catch (error) {
       console.error('复制失败:', error);
       showToast('复制失败，PIN: ' + currentPin);
+    }
+  };
+
+  // ── Copy URL ──
+  window.copyUrl = async function () {
+    if (!currentPin) return;
+
+    const joinUrl = `${window.location.origin}${window.location.pathname}?pin=${currentPin}`;
+
+    try {
+      // 方法 1：使用 Clipboard API（推荐）
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(joinUrl);
+        showToast('链接已复制到剪贴板');
+      } else {
+        // 方法 2：使用传统方法（降级）
+        const textarea = document.createElement('textarea');
+        textarea.value = joinUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        if (successful) {
+          showToast('链接已复制到剪贴板');
+        } else {
+          showToast('复制失败');
+        }
+      }
+
+      // 动画反馈
+      const btn = $('btnCopyUrl');
+      if (btn) {
+        btn.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          btn.style.transform = 'scale(1)';
+        }, 150);
+      }
+    } catch (error) {
+      console.error('复制失败:', error);
+      showToast('复制失败');
     }
   };
 
