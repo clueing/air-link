@@ -86,7 +86,7 @@ AirLink 使用 P2P 技术，连接时会交换 IP 地址：
 server:
   port: 8080
   host: "0.0.0.0"
-  auto_open_browser: true
+  auto_open_browser: false
 
 # WebRTC 配置
 webrtc:

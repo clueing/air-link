@@ -427,7 +427,7 @@ type AttemptRecord struct {
 server:
   port: 8080                    # HTTP/WebSocket 端口
   host: "0.0.0.0"              # 监听地址
-  auto_open_browser: true       # 启动时自动打开浏览器
+  auto_open_browser: false       # 启动时自动打开浏览器
 
 # WebRTC 配置
 webrtc:

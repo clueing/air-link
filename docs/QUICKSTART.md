@@ -86,7 +86,7 @@ make build-all
 ```yaml
 server:
   port: 8080                    # 修改端口
-  auto_open_browser: true       # 是否自动打开浏览器
+  auto_open_browser: false       # 是否自动打开浏览器
 
 webrtc:
   stun_servers:                 # STUN 服务器列表
