@@ -377,7 +377,12 @@
       white-space: nowrap;
       color: var(--text);
     }
-    .header-logo svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--accent); }
+    .header-logo img {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: 6px;
+    }
     .header-divider {
       width: 1px; height: 24px;
       background: var(--line);
@@ -457,12 +462,14 @@
       width: 44px; height: 44px;
       display: inline-grid; place-items: center;
       border-radius: var(--radius-md);
-      background: var(--brand-gradient);
-      color: #fff;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
       flex-shrink: 0;
+      overflow: hidden;
     }
-    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .brand-text h1 {
       font-size: 24px; line-height: 1.2;
       font-weight: 600; letter-spacing: -0.02em;
@@ -997,15 +1004,7 @@
   <!-- Header -->
   <header class="header">
     <div class="header-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 10 L12 6 L17 10 M7 14 L12 18 L17 14"/>
-        <circle cx="7" cy="10" r="1.5" fill="currentColor"/>
-        <circle cx="17" cy="10" r="1.5" fill="currentColor"/>
-        <circle cx="7" cy="14" r="1.5" fill="currentColor"/>
-        <circle cx="17" cy="14" r="1.5" fill="currentColor"/>
-        <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
-        <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
-      </svg>
+      <img src="/logo.png" alt="AirLink" />
       AirLink
     </div>
     <div class="header-divider"></div>
@@ -1035,15 +1034,7 @@
     <div class="lobby-card">
       <div class="brand">
         <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 10 L12 6 L17 10 M7 14 L12 18 L17 14"/>
-            <circle cx="7" cy="10" r="1.5" fill="currentColor"/>
-            <circle cx="17" cy="10" r="1.5" fill="currentColor"/>
-            <circle cx="7" cy="14" r="1.5" fill="currentColor"/>
-            <circle cx="17" cy="14" r="1.5" fill="currentColor"/>
-            <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
-            <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
-          </svg>
+          <img src="/logo.png" alt="AirLink" />
         </div>
         <div class="brand-text">
           <h1>AirLink</h1>
@@ -1090,15 +1081,7 @@
     <div class="waiting-card">
       <div class="brand">
         <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 10 L12 6 L17 10 M7 14 L12 18 L17 14"/>
-            <circle cx="7" cy="10" r="1.5" fill="currentColor"/>
-            <circle cx="17" cy="10" r="1.5" fill="currentColor"/>
-            <circle cx="7" cy="14" r="1.5" fill="currentColor"/>
-            <circle cx="17" cy="14" r="1.5" fill="currentColor"/>
-            <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
-            <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
-          </svg>
+          <img src="/logo.png" alt="AirLink" />
         </div>
         <div class="brand-text">
           <h1>等待设备加入</h1>
