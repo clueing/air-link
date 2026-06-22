@@ -1285,6 +1285,33 @@
   let lanDevices = [];
   let scanning = false;
 
+  function renderLanDevices() {
+    const container = document.getElementById('lanDevices');
+    const empty = document.getElementById('lanEmpty');
+
+    if (!container) return;
+
+    if (lanDevices.length === 0) {
+      container.innerHTML = '';
+      if (empty) {
+        container.appendChild(empty);
+        empty.style.display = '';
+      }
+      return;
+    }
+
+    container.innerHTML = lanDevices.map(d => `
+      <div class="lan-device-item">
+        <span class="lan-device-dot"></span>
+        <div class="lan-device-info">
+          <div class="lan-device-name">${escHtml(d.device_name || d.name || '未知设备')}</div>
+          <div class="lan-device-ip">${escHtml(d.ip || '')}</div>
+        </div>
+        <button class="lan-device-connect" onclick="connectLanDevice('${escHtml(d.device_id || d.name || '')}')">连接</button>
+      </div>
+    `).join('');
+  }
+
   window.scanLan = async function() {
     if (scanning) return;
     scanning = true;
