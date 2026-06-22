@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>AirLink — P2P 文件传输</title>
   <style>
     :root {
@@ -329,7 +329,9 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
       font-family: var(--font);
       font-size: 14px;
       line-height: 1.5;
@@ -337,6 +339,11 @@
       background: var(--bg-gradient);
       -webkit-font-smoothing: antialiased;
       overflow: hidden;
+      position: fixed;
+      -webkit-overflow-scrolling: touch;
+    }
+    body {
+      touch-action: pan-y;
     }
 
     /* ── App Shell ── */
@@ -924,6 +931,32 @@
       .lobby-card { padding: 48px 44px; }
       .msg { max-width: 55%; }
     }
+
+    /* 移动端优化 */
+    @media (max-width: 767px) {
+      /* 修复iOS输入框激活后页面变宽 */
+      input, textarea {
+        font-size: 16px !important; /* 防止iOS自动缩放 */
+      }
+
+      /* 大厅页面滚动 */
+      .view-lobby {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        max-height: 100vh;
+      }
+
+      /* 聊天页面滚动 */
+      .view-room .messages {
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* 防止页面横向滚动 */
+      .app {
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1427,6 +1460,7 @@
 
       // 初始化文件传输
       fileTransfer = new FileTransferManager(app.webrtc);
+      app.setFileTransferManager(fileTransfer);
 
       fileTransfer.onProgress((fileId, progress, direction, metadata) => {
         // 更新进度条
@@ -1676,22 +1710,36 @@
 
   // ── File Transfer ──
   window.onFileSelect = async function (e) {
-    if (!app || !fileTransfer) return;
-
-    const files = Array.from(e.target.files);
-    const devices = app.getDevices().filter(d => !d.isYou);
-
-    if (devices.length === 0) {
-      showToast('没有可发送的设备');
+    if (!app || !fileTransfer) {
+      showToast('应用未初始化');
       return;
     }
 
-    // 发送到第一个设备（简化处理，实际应该选择目标设备）
-    const targetDevice = devices[0];
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
+    const deviceList = app.getDevices().filter(d => !d.isYou);
+
+    if (deviceList.length === 0) {
+      showToast('房间内没有其他设备');
+      e.target.value = '';
+      return;
+    }
+
+    // 发送到所有设备
     for (const file of files) {
-      const fileId = await fileTransfer.sendFile(file, targetDevice.id);
-      addFileCard(file.name, file.size, userName, true, file, fileId);
+      for (const device of deviceList) {
+        try {
+          const fileId = await fileTransfer.sendFile(file, device.id);
+          // 只显示一次文件卡片（给第一个设备）
+          if (device === deviceList[0]) {
+            addFileCard(file.name, file.size, userName, true, file, fileId);
+          }
+        } catch (error) {
+          console.error('发送文件失败:', error);
+          showToast('发送文件失败: ' + error.message);
+        }
+      }
     }
 
     e.target.value = '';

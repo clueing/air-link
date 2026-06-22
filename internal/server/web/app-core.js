@@ -3,6 +3,7 @@ class AirLinkApp {
   constructor() {
     this.signaling = null;
     this.webrtc = new WebRTCManager();
+    this.fileTransfer = null; // 文件传输管理器
     this.currentRoom = null;
     this.devices = new Map(); // deviceId -> device info
     this.isHost = false;
@@ -195,10 +196,16 @@ class AirLinkApp {
 
     // 文本消息
     this.webrtc.onMessage((deviceId, message) => {
+      console.log('收到消息:', message);
       if (this.onMessageReceivedCallback) {
         this.onMessageReceivedCallback(deviceId, message);
       }
     });
+  }
+
+  // 设置文件传输管理器
+  setFileTransferManager(fileTransfer) {
+    this.fileTransfer = fileTransfer;
   }
 
   // 连接到所有设备
