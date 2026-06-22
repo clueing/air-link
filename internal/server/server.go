@@ -149,10 +149,12 @@ func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 
 // handleScan 处理扫描请求
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
+	s.logger.Infof("收到扫描请求")
 	devices := make([]interface{}, 0)
 
 	// mDNS 扫描
 	if s.mdnsService != nil {
+		s.logger.Infof("开始 mDNS 扫描，服务名: %s", s.config.Discovery.ServiceName)
 		mdnsDevices, err := discovery.Scan(
 			s.config.Discovery.ServiceName,
 			2*time.Second,
@@ -161,20 +163,28 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			s.logger.Errorf("mDNS 扫描失败: %v", err)
 		} else {
+			s.logger.Infof("mDNS 扫描完成，找到 %d 个设备", len(mdnsDevices))
 			for _, d := range mdnsDevices {
+				s.logger.Infof("发现设备: %s (%s) at %s:%d", d.DeviceName, d.DeviceID, d.IP, d.Port)
 				if d.DeviceID != s.deviceID {
 					devices = append(devices, d)
+				} else {
+					s.logger.Infof("跳过自己的设备")
 				}
 			}
 		}
+	} else {
+		s.logger.Warnf("mDNS 服务未启用")
 	}
 
 	// HTTP 探测（如果 mDNS 未发现设备）
 	if len(devices) == 0 && s.httpProbe != nil {
+		s.logger.Infof("mDNS 未发现设备，开始 HTTP 探测")
 		probeResults, err := s.httpProbe.Scan(s.config.Server.Port, 20)
 		if err != nil {
 			s.logger.Errorf("HTTP 探测失败: %v", err)
 		} else {
+			s.logger.Infof("HTTP 探测完成，找到 %d 个设备", len(probeResults))
 			for _, r := range probeResults {
 				if r.DeviceID != s.deviceID {
 					devices = append(devices, r)
@@ -183,6 +193,7 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.logger.Infof("最终返回 %d 个设备", len(devices))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"devices": devices,
